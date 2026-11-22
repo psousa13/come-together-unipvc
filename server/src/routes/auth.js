@@ -43,7 +43,32 @@ function isAllowedEmail(email) {
   return allowed.some((d) => domain === d || domain.endsWith(`.${d}`));
 }
 
-// Step 1: ask for a code. Typing "admin" switches the client to the password field.
+async function sendLoginCode(email, code) {
+  const minutes = CODE_TTL_MS / 60000;
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: 'Come Together UNIPVC', email: process.env.MAIL_FROM },
+      to: [{ email }],
+      subject: `O teu código: ${code}`,
+      htmlContent:
+        `<p>O teu código de acesso ao Come Together é:</p>` +
+        `<p style="font-size:28px;font-weight:bold;letter-spacing:4px">${code}</p>` +
+        `<p>Expira em ${minutes} minutos. Se não pediste este código, ignora este email.</p>`,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Brevo ${response.status}: ${detail}`);
+  }
+}
+
 router.post('/request-code', async (req, res) => {
   const email = normalize(req.body.email);
   if (email === 'admin') return res.json({ requiresPassword: true });
@@ -63,15 +88,27 @@ router.post('/request-code', async (req, res) => {
     { upsert: true }
   );
 
-  // TODO: send the code by email (Resend or Nodemailer). For now: dev console only.
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[DEV] Login code for ${email}: ${code}`);
+  }
+
+  const mailConfigured = process.env.BREVO_API_KEY && process.env.MAIL_FROM;
+
+  if (mailConfigured) {
+    try {
+      await sendLoginCode(email, code);
+    } catch (err) {
+      console.error('[MAIL] Falha ao enviar código:', err.message);
+      return res.status(502).json({ error: 'Não foi possível enviar o email. Tenta de novo.' });
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    console.error('[MAIL] BREVO_API_KEY ou MAIL_FROM em falta.');
+    return res.status(500).json({ error: 'Envio de email não configurado.' });
   }
 
   res.json({ ok: true });
 });
 
-// Step 2: verify the code, create the user on first login, return a token.
 router.post('/verify-code', async (req, res) => {
   const email = normalize(req.body.email);
   const code = String(req.body.code || '').trim();
@@ -98,7 +135,6 @@ router.post('/verify-code', async (req, res) => {
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-// Single app-admin account, password only.
 router.post('/admin-login', async (req, res) => {
   const expected = process.env.ADMIN_PASSWORD;
   const given = String(req.body.password || '');
