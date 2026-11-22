@@ -1,5 +1,4 @@
 require('dotenv').config();
-// Some networks block SRV DNS lookups; optional override for local dev
 if (process.env.DNS_SERVERS) {
   require('node:dns').setServers(process.env.DNS_SERVERS.split(','));
 }
@@ -10,13 +9,13 @@ const mongoose = require('mongoose');
 const http = require('http');
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', require('./routes/auth'));
 
-// http server (not app.listen) so Socket.IO can attach later
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
@@ -30,5 +29,3 @@ mongoose
     console.error(err);
     process.exit(1);
   });
-
-

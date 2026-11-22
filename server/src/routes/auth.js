@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('node:crypto');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const LoginCode = require('../models/LoginCode');
 const { requireAuth } = require('../middleware/auth');
@@ -8,6 +9,26 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
+
+const makeLimiter = (limit, message, extra = {}) =>
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: message },
+    ...extra,
+  });
+
+const requestCodeLimiter = makeLimiter(
+  5,
+  'Demasiados pedidos de código. Tenta de novo dentro de 15 minutos.'
+);
+const verifyLimiter = makeLimiter(
+  20,
+  'Demasiadas tentativas. Tenta de novo dentro de 15 minutos.',
+  { skipSuccessfulRequests: true }
+);
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
 
@@ -69,7 +90,7 @@ async function sendLoginCode(email, code) {
   }
 }
 
-router.post('/request-code', async (req, res) => {
+router.post('/request-code', requestCodeLimiter, async (req, res) => {
   const email = normalize(req.body.email);
   if (email === 'admin') return res.json({ requiresPassword: true });
 
@@ -109,7 +130,7 @@ router.post('/request-code', async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/verify-code', async (req, res) => {
+router.post('/verify-code', verifyLimiter, async (req, res) => {
   const email = normalize(req.body.email);
   const code = String(req.body.code || '').trim();
   const invalid = { error: 'Código inválido ou expirado.' };
@@ -135,7 +156,7 @@ router.post('/verify-code', async (req, res) => {
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-router.post('/admin-login', async (req, res) => {
+router.post('/admin-login', verifyLimiter, async (req, res) => {
   const expected = process.env.ADMIN_PASSWORD;
   const given = String(req.body.password || '');
   const a = crypto.createHash('sha256').update(given).digest();
