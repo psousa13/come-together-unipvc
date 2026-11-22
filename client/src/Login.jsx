@@ -57,7 +57,7 @@ export default function Login() {
             type="text"
             inputMode="numeric"
             maxLength={6}
-            placeholder="Código de 6 dígitos"
+            placeholder="CÃ³digo de 6 dÃ­gitos"
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             autoFocus
