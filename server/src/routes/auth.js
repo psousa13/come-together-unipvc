@@ -75,7 +75,7 @@ router.post('/request-code', async (req, res) => {
 router.post('/verify-code', async (req, res) => {
   const email = normalize(req.body.email);
   const code = String(req.body.code || '').trim();
-  const invalid = { error: 'Código inválido ou expirado.' };
+  const invalid = { error: 'CÃ³digo invÃ¡lido ou expirado.' };
 
   const entry = await LoginCode.findOne({ email });
   if (!entry || entry.attempts >= MAX_ATTEMPTS) {
@@ -106,12 +106,12 @@ router.post('/admin-login', async (req, res) => {
   const b = crypto.createHash('sha256').update(expected || '').digest();
 
   if (!expected || !crypto.timingSafeEqual(a, b)) {
-    return res.status(401).json({ error: 'Credenciais inválidas.' });
+    return res.status(401).json({ error: 'Credenciais invÃ¡lidas.' });
   }
 
   let user = await User.findOne({ email: 'admin' });
   if (!user) {
-    user = await User.create({ email: 'admin', displayName: 'Administração', role: 'admin' });
+    user = await User.create({ email: 'admin', displayName: 'AdministraÃ§Ã£o', role: 'admin' });
   }
 
   res.json({ token: signToken(user), user: publicUser(user) });

@@ -9,9 +9,9 @@ export default function App() {
 
   return (
     <main className="card">
-      <h1>Olá, {user.displayName}</h1>
-      <p className="muted">{user.role === 'admin' ? 'Administração' : user.email}</p>
-      <button onClick={logout}>Terminar sessão</button>
+      <h1>OlÃ¡, {user.displayName}</h1>
+      <p className="muted">{user.role === 'admin' ? 'AdministraÃ§Ã£o' : user.email}</p>
+      <button onClick={logout}>Terminar sessÃ£o</button>
     </main>
   );
 }

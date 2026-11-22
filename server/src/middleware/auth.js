@@ -4,22 +4,22 @@ const User = require('../models/User');
 async function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Sess„o necess·ria.' });
+  if (!token) return res.status(401).json({ error: 'Sess√£o necess√°ria.' });
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.sub);
-    if (!user) return res.status(401).json({ error: 'Sess„o inv·lida.' });
+    if (!user) return res.status(401).json({ error: 'Sess√£o inv√°lida.' });
     req.user = user;
     next();
   } catch {
-    res.status(401).json({ error: 'Sess„o inv·lida ou expirada.' });
+    res.status(401).json({ error: 'Sess√£o inv√°lida ou expirada.' });
   }
 }
 
 function requireAdmin(req, res, next) {
   if (req.user?.role !== 'admin') {
-    return res.status(403).json({ error: 'Sem permissıes.' });
+    return res.status(403).json({ error: 'Sem permiss√µes.' });
   }
   next();
 }

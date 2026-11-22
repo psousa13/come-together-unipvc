@@ -11,7 +11,7 @@ export async function api(path, { method = 'GET', body, token } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || 'Erro de ligação ao servidor.');
+    const err = new Error(data.error || 'Erro de ligaÃ§Ã£o ao servidor.');
     err.status = res.status;
     throw err;
   }
