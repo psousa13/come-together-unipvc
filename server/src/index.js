@@ -14,6 +14,7 @@ app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.use('/api/auth', require('./routes/auth'));
 
 // http server (not app.listen) so Socket.IO can attach later
 const server = http.createServer(app);
@@ -29,4 +30,5 @@ mongoose
     console.error(err);
     process.exit(1);
   });
+
 
