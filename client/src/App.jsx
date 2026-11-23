@@ -9,6 +9,8 @@ import ProfileForm from './ProfileForm.jsx';
 import Events from './Events.jsx';
 import EventPage from './EventPage.jsx';
 import CreateEvent from './CreateEvent.jsx';
+import Notifications from './Notifications.jsx';
+import { useNotifications } from './useNotifications.js';
 
 const NAV = [
   ['Início', 'home'],
@@ -85,7 +87,7 @@ function UserSearch({ onOpen }) {
   );
 }
 
-function Header({ tab, user, onBell }) {
+function Header({ tab, user, unread, onBell }) {
   const head = HEAD[tab];
   return (
     <header className="flex items-end gap-3 px-5 pb-4 pt-[max(env(safe-area-inset-top),2rem)] lg:h-32 lg:px-8 lg:pt-0">
@@ -96,15 +98,22 @@ function Header({ tab, user, onBell }) {
         </h1>
         <p className="mt-1.5 truncate text-sm text-navy-soft">{head.sub}</p>
       </div>
-      <button
-        type="button"
-        onClick={onBell}
-        title="Notificações (em breve)"
-        aria-label="Notificações"
-        className="hit grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy text-paper shadow-sm"
-      >
-        <Icon name="bell" size={18} />
-      </button>
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={onBell}
+          title="Notificações"
+          aria-label={unread > 0 ? `Notificações (${unread} por ler)` : 'Notificações'}
+          className="hit grid h-10 w-10 place-items-center rounded-full bg-navy text-paper shadow-sm"
+        >
+          <Icon name="bell" size={18} />
+        </button>
+        {unread > 0 && (
+          <span className="pointer-events-none absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ruby px-1 text-[11px] font-bold leading-none text-paper">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </div>
     </header>
   );
 }
@@ -131,6 +140,8 @@ export default function App() {
   const [page, setPage] = useState(null);
   const [n, setN] = useState(0);
   const scroller = useRef(null);
+  const [fresh, setFresh] = useState([]);
+  const notif = useNotifications(user && user.username && user.role !== 'admin' ? user.id : null);
 
   if (loading) return null;
   if (!user) return <Access />;
@@ -160,6 +171,11 @@ export default function App() {
   };
   const openUser = (username) => showPage({ t: 'user', username });
   const openEvent = (id) => showPage({ t: 'event', id });
+  const openBell = () => {
+    setFresh(notif.list.filter((x) => !x.read).map((x) => x.id));
+    notif.markAllRead();
+    showPage({ t: 'notifications' });
+  };
   const ownProfile = () => {
     setTab('Perfil');
     setN((x) => x + 1);
@@ -200,6 +216,15 @@ export default function App() {
         </div>
       </>
     );
+  } else if (page?.t === 'notifications') {
+    content = (
+      <>
+        <BackBar onBack={back} title="Notificações" />
+        <div className="px-5 lg:px-8">
+          <Notifications list={notif.list} fresh={fresh} onOpen={openEvent} />
+        </div>
+      </>
+    );
   } else if (page?.t === 'event') {
     content = (
       <>
@@ -221,7 +246,7 @@ export default function App() {
   } else {
     content = (
       <>
-        <Header tab={tab} user={user} onBell={() => {}} />
+        <Header tab={tab} user={user} unread={notif.unread} onBell={openBell} />
         {tab === 'Perfil' ? (
           <div className="legacy space-y-4 px-5 lg:px-8">
             <Profile
