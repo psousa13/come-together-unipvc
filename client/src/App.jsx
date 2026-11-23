@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import Login from './Login.jsx';
+import { Access, Setup } from './Access.jsx';
 import { useAuth } from './useAuth.js';
 import { api } from './api.js';
 import Avatar from './Avatar.jsx';
@@ -131,13 +131,7 @@ export default function App() {
   const scroller = useRef(null);
 
   if (loading) return null;
-  if (!user) {
-    return (
-      <div className="grid min-h-dvh place-items-center px-5">
-        <Login />
-      </div>
-    );
-  }
+  if (!user) return <Access />;
   if (user.role === 'admin') {
     return (
       <div className="grid min-h-dvh place-items-center px-5">
@@ -149,13 +143,7 @@ export default function App() {
       </div>
     );
   }
-  if (!user.username) {
-    return (
-      <div className="grid min-h-dvh place-items-center px-5 py-8">
-        <ProfileForm mode="onboarding" />
-      </div>
-    );
-  }
+  if (!user.username) return <Setup />;
 
   const toTop = () => scroller.current?.scrollTo({ top: 0 });
   const go = (k) => {

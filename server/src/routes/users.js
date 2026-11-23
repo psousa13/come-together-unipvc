@@ -2,7 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { publicUser } = require('../serializers');
-const { SCHOOLS } = require('../constants');
+const { SCHOOLS, MEMBER_TYPES } = require('../constants');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -60,7 +60,7 @@ router.patch('/me', async (req, res) => {
     return res.status(403).json({ error: 'A conta de administração não tem perfil.' });
   }
 
-  const { displayName, username, school, bio, avatar } = req.body;
+  const { displayName, username, school, memberType, course, bio, avatar } = req.body;
 
   if (displayName !== undefined) {
     const value = String(displayName).trim();
@@ -88,6 +88,21 @@ router.patch('/me', async (req, res) => {
       return res.status(400).json({ error: 'Escola inválida.' });
     }
     user.school = school || undefined;
+  }
+
+  if (memberType !== undefined) {
+    if (memberType !== '' && !MEMBER_TYPES.includes(memberType)) {
+      return res.status(400).json({ error: 'Tipo de membro inválido.' });
+    }
+    user.memberType = memberType || undefined;
+  }
+
+  if (course !== undefined) {
+    const value = String(course).trim();
+    if (value.length > 80) {
+      return res.status(400).json({ error: 'O curso pode ter no máximo 80 caracteres.' });
+    }
+    user.course = value || undefined;
   }
 
   if (bio !== undefined) {
@@ -133,6 +148,8 @@ router.get('/:username', async (req, res) => {
   res.json({
     user: {
       ...mini(target),
+      memberType: target.memberType,
+      course: target.course,
       bio: target.bio || '',
       createdAt: target.createdAt,
       followersCount,
