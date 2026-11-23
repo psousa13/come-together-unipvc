@@ -6,6 +6,9 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Profile from './Profile.jsx';
 import ProfileForm from './ProfileForm.jsx';
+import Events from './Events.jsx';
+import EventPage from './EventPage.jsx';
+import CreateEvent from './CreateEvent.jsx';
 
 const NAV = [
   ['Início', 'home'],
@@ -23,7 +26,6 @@ const HEAD = {
 };
 const SOON = {
   Início: 'O feed de publicações e avaliações chega em breve.',
-  Eventos: 'A lista e o mapa de eventos chegam em breve.',
   Comunidades: 'As comunidades chegam em breve.',
 };
 
@@ -157,6 +159,7 @@ export default function App() {
     toTop();
   };
   const openUser = (username) => showPage({ t: 'user', username });
+  const openEvent = (id) => showPage({ t: 'event', id });
   const ownProfile = () => {
     setTab('Perfil');
     setN((x) => x + 1);
@@ -197,6 +200,24 @@ export default function App() {
         </div>
       </>
     );
+  } else if (page?.t === 'event') {
+    content = (
+      <>
+        <BackBar onBack={back} title="Evento" />
+        <div className="px-5 lg:px-8">
+          <EventPage key={page.id} id={page.id} />
+        </div>
+      </>
+    );
+  } else if (page?.t === 'create') {
+    content = (
+      <>
+        <BackBar onBack={back} title="Criar evento" />
+        <div className="px-5 lg:px-8">
+          <CreateEvent onDone={openEvent} />
+        </div>
+      </>
+    );
   } else {
     content = (
       <>
@@ -218,6 +239,8 @@ export default function App() {
               </button>
             </div>
           </div>
+        ) : tab === 'Eventos' ? (
+          <Events onOpen={openEvent} onCreate={() => showPage({ t: 'create' })} />
         ) : (
           <Soon text={SOON[tab]} />
         )}
@@ -225,13 +248,15 @@ export default function App() {
     );
   }
 
+  const eventPage = page?.t === 'event' || page?.t === 'create';
+
   return (
     <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col bg-sand lg:max-w-[1280px] lg:flex-row">
       <div
         ref={scroller}
         className="app-content no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:mx-auto lg:max-w-[920px]"
       >
-        <div className="rise" key={`${tab}-${page?.t ?? ''}-${page?.username ?? ''}`}>
+        <div className="rise" key={`${tab}-${page?.t ?? ''}-${page?.username ?? page?.id ?? ''}`}>
           {content}
         </div>
       </div>
@@ -240,7 +265,7 @@ export default function App() {
         className="floating-nav absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-50 grid grid-cols-4 rounded-full p-2 lg:static lg:order-first lg:m-6 lg:mr-0 lg:mt-10 lg:w-60 lg:shrink-0 lg:grid-cols-1 lg:self-start lg:rounded-3xl"
       >
         {NAV.map(([label, icon]) => {
-          const active = !page && tab === label;
+          const active = tab === label && (!page || (eventPage && label === 'Eventos'));
           return (
             <button
               key={label}
