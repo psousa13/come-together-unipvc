@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const http = require('http');
+const { initRealtime } = require('./realtime');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -17,8 +18,10 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/events', require('./routes/events'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 const server = http.createServer(app);
+initRealtime(server);
 const PORT = process.env.PORT || 3000;
 
 mongoose

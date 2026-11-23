@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { SCHOOLS } = require('../constants');
+const { notifyGoing } = require('../notify');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -222,16 +223,18 @@ async function setGoing(req, res, add) {
   }
   if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'Evento não encontrado.' });
   const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
-    .select('cancelled endsAt')
+    .select('cancelled endsAt title organizer')
     .lean();
   if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
   if (add && e.cancelled) return bad(res, 'Este evento foi cancelado.');
   if (add && e.endsAt < new Date()) return bad(res, 'Este evento já terminou.');
 
   const update = add ? { $addToSet: { attendees: me._id } } : { $pull: { attendees: me._id } };
-  const updated = await Event.findByIdAndUpdate(e._id, update, { new: true })
-    .select('attendees')
-    .lean();
+  const result = await Event.updateOne({ _id: e._id }, update, { timestamps: false });
+  const updated = await Event.findById(e._id).select('attendees').lean();
+  if (add && result.modifiedCount === 1 && String(e.organizer) !== String(me._id)) {
+    await notifyGoing({ organizerId: e.organizer, actor: me, event: e });
+  }
   res.json({ going: add, attendeesCount: updated.attendees.length });
 }
 
