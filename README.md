@@ -240,9 +240,9 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 
 O uso de IA neste projeto está registado de forma transparente.
 
-1. Claude (Anthropic): código, configuração e estrutura dos documentos, incluindo o modelo e as rotas de eventos, o cliente de eventos e as notificações em tempo real.
-2. Figma Make: protótipo visual da aplicação (fora do repositório).
-3. ChatGPT: parte da escrita de `Access.jsx`; o resultado foi verificado e completado com Claude.
+1. **Claude (Anthropic):** Utilizado como ferramenta de apoio ao desenvolvimento, auxiliando na escrita, revisão e organização do código.
+
+2. **Figma Make:** Utilizado para criar o protótipo visual da aplicação, desenvolvido separadamente do repositório do projeto.
 
 Nenhuma IA tem acesso direto ao disco, ao repositório ou às contas do grupo: só vê os ficheiros que o grupo lhe envia, e chaves e passwords nunca lhe são enviadas. Todo o código é executado e testado por pessoas, e só se dá como confirmado o que foi visto em output.
 
