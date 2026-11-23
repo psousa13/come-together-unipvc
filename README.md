@@ -78,7 +78,7 @@ Restrição do grupo: tudo gratuito. Por isso os avatares ficam guardados no Mon
 
 Pré-requisitos: Git, VS Code e Node.js 18 ou superior (recomendado 20 LTS). Comandos em PowerShell.
 
-1. Clonar (o repositório é privado, é preciso acesso) e instalar as dependências, uma vez em cada pasta:
+1. Clonar e instalar as dependências, uma vez em cada pasta:
 
 ~~~powershell
 git clone https://github.com/psousa13/come-together-unipvc.git
