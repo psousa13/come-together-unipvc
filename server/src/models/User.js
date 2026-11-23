@@ -7,9 +7,13 @@ const userSchema = new Schema(
     displayName: { type: String, required: true, trim: true },
     avatar: String,
     school: String,
+    bio: { type: String, trim: true, maxlength: 160, default: '' },
     role: { type: String, enum: ['member', 'admin'], default: 'member' },
+    following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );
+
+userSchema.index({ following: 1 });
 
 module.exports = model('User', userSchema);

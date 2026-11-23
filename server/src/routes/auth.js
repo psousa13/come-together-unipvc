@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const LoginCode = require('../models/LoginCode');
 const { requireAuth } = require('../middleware/auth');
+const { publicUser } = require('../serializers');
 
 const router = express.Router();
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -42,16 +43,6 @@ const signToken = (user) =>
   jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   });
-
-const publicUser = (u) => ({
-  id: u.id,
-  email: u.email,
-  username: u.username,
-  displayName: u.displayName,
-  avatar: u.avatar,
-  school: u.school,
-  role: u.role,
-});
 
 function isAllowedEmail(email) {
   const allowed = (process.env.ALLOWED_EMAIL_DOMAINS || 'ipvc.pt')
