@@ -1,11 +1,114 @@
-:root { font-family: system-ui, sans-serif; color-scheme: light dark; }
-body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
-.card { width: min(320px, 92vw); display: grid; gap: 8px; }
-h1 { margin: 0; font-size: 1.4rem; }
-form { display: grid; gap: 8px; }
-input, button { padding: 8px 10px; font: inherit; border-radius: 6px; border: 1px solid #8884; }
-button { cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: default; }
-.link { border: 0; background: none; text-decoration: underline; }
-.muted { margin: 0; opacity: 0.7; }
-.error { margin: 0; color: #d33; font-size: 0.9rem; }
+@import './fonts.css';
+@import 'tailwindcss';
+
+@theme {
+  --color-sand: #e6edf8;
+  --color-sand-deep: #cfdbf0;
+  --color-paper: #f7fafe;
+  --color-navy: #011228;
+  --color-navy-soft: #3f6299;
+  --color-coral: #5f80ba;
+  --color-coral-deep: #1c467a;
+  --color-sky: #7f9fdb;
+  --color-ruby: #b3322e;
+  --color-gold: #e2a923;
+  --color-line: rgba(1, 18, 40, 0.12);
+  --font-display: 'Bodoni Moda', serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --color-nav-material: rgba(1, 18, 40, 0.9);
+  --shadow-floating: 0 12px 32px -8px rgba(1, 18, 40, 0.3);
+}
+
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+html, body {
+  margin: 0;
+  background: var(--color-sand);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--color-sky); color: var(--color-navy); }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.rise { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+.hit { position: relative; }
+.hit::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+@layer base {
+  body { line-height: 1.5; font-optical-sizing: auto; }
+  h1, h2, h3 { letter-spacing: -0.025em; text-wrap: balance; }
+  button, a, input, textarea, select, [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:not(:disabled), [role='button'] { cursor: pointer; }
+  button:not(:disabled):active, [role='button']:active { opacity: 0.78; }
+  :is(button, a, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-coral-deep);
+    outline-offset: 3px;
+  }
+  input, textarea, select { font-size: 1rem; }
+}
+
+.app-content {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 7rem);
+  overscroll-behavior-y: contain;
+}
+.floating-nav {
+  background: var(--color-nav-material);
+  border: 1px solid var(--color-sky);
+  box-shadow: var(--shadow-floating);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+.floating-nav button { min-height: 3.25rem; letter-spacing: 0.015em; }
+.floating-nav button:focus-visible { outline-color: var(--color-gold); outline-offset: -2px; }
+
+@media (prefers-reduced-transparency: reduce) {
+  .floating-nav { background: var(--color-navy); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (min-width: 1024px) {
+  .app-content { padding-bottom: 3rem; }
+  .floating-nav { position: sticky; top: 2.5rem; }
+}
+
+/* Compat: current screens (Login, ProfileForm, Profile) until they are ported */
+.card, .legacy { display: grid; gap: 8px; }
+.card { width: min(340px, 92vw); }
+.card h1, .legacy h1 { margin: 0; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
+.card form { display: grid; gap: 8px; }
+.card input, .card button, .card select, .card textarea,
+.legacy input, .legacy button, .legacy select, .legacy textarea {
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--color-navy);
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+.card button[type='submit'], .legacy button[type='submit'] {
+  background: var(--color-coral-deep);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+}
+.card button:disabled, .legacy button:disabled { opacity: 0.5; cursor: default; }
+.card .link { border: 0; background: none; text-decoration: underline; }
+.card .muted, .legacy .muted { margin: 0; color: var(--color-navy-soft); font-size: 0.875rem; }
+.card .error { margin: 0; color: var(--color-ruby); font-size: 0.9rem; }
+.leaflet-container { background: #e9eff8; }
