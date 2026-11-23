@@ -5,6 +5,8 @@ const publicUser = (u) => ({
   displayName: u.displayName,
   avatar: u.avatar,
   school: u.school,
+  memberType: u.memberType,
+  course: u.course,
   bio: u.bio || '',
   role: u.role,
 });
