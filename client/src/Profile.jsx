@@ -3,6 +3,21 @@ import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import Notice from './Notice.jsx';
+
+function ProfileSkeleton() {
+  return (
+    <div className="flex flex-col items-center gap-3 pb-4 pt-2" aria-busy="true">
+      <p className="sr-only" role="status">
+        A carregar perfil…
+      </p>
+      <div className="skeleton h-28 w-28 rounded-full" />
+      <div className="skeleton h-6 w-40 rounded-full" />
+      <div className="skeleton h-4 w-24 rounded-full" />
+      <div className="skeleton mt-3 h-10 w-full max-w-[340px] rounded-full" />
+    </div>
+  );
+}
 
 export default function Profile({ username, onOpen, onFind }) {
   const { getToken } = useAuth();
@@ -46,8 +61,8 @@ export default function Profile({ username, onOpen, onFind }) {
     }
   }
 
-  if (error && !profile) return <p className="text-sm text-ruby">{error}</p>;
-  if (!profile) return null;
+  if (error && !profile) return <Notice danger icon="info" title="Perfil indisponível" text={error} />;
+  if (!profile) return <ProfileSkeleton />;
 
   const where = [profile.school, profile.course].filter(Boolean).join(' · ');
   const counts = [

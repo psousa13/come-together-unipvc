@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import Notice from './Notice.jsx';
 import { goingText, whenLong } from './format.js';
 
 function Fact({ icon, label, children }) {
@@ -19,6 +20,27 @@ function Fact({ icon, label, children }) {
   );
 }
 
+function EventSkeleton() {
+  return (
+    <div className="space-y-4 pb-4" aria-busy="true">
+      <p className="sr-only" role="status">
+        A carregar evento…
+      </p>
+      <div className="space-y-3">
+        <div className="skeleton h-5 w-28 rounded-full" />
+        <div className="skeleton h-9 w-4/5 rounded-2xl" />
+        <div className="skeleton h-4 w-1/2 rounded-full" />
+      </div>
+      <div className="grid gap-2">
+        <div className="skeleton h-16 w-full rounded-2xl" />
+        <div className="skeleton h-16 w-full rounded-2xl" />
+        <div className="skeleton h-16 w-full rounded-2xl" />
+      </div>
+      <div className="skeleton h-13 w-full rounded-full" />
+    </div>
+  );
+}
+
 const btn =
   'flex h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold transition active:scale-[0.98] disabled:opacity-40';
 
@@ -28,6 +50,7 @@ export default function EventPage({ id }) {
   const [res, setRes] = useState({ id: null, event: null, error: '' });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -39,10 +62,12 @@ export default function EventPage({ id }) {
     };
   }, [id, token]);
 
-  if (res.id !== id) return <p className="m-0 py-6 text-center text-sm text-navy-soft">A carregar…</p>;
+  if (res.id !== id) return <EventSkeleton />;
 
   if (res.error || !res.event) {
-    return <p className="m-0 py-6 text-center text-sm text-ruby">{res.error || 'Evento não encontrado.'}</p>;
+    return (
+      <Notice danger icon="info" title="Evento indisponível" text={res.error || 'Evento não encontrado.'} />
+    );
   }
 
   const e = res.event;
@@ -63,12 +88,12 @@ export default function EventPage({ id }) {
   }
 
   async function cancel() {
-    if (!window.confirm('Cancelar este evento?')) return;
     setBusy(true);
     setMsg('');
     try {
       await api(`/events/${id}/cancel`, { method: 'POST', token });
       setRes((r) => ({ ...r, event: { ...r.event, cancelled: true } }));
+      setConfirming(false);
     } catch (err) {
       setMsg(err.message);
     }
@@ -129,6 +154,7 @@ export default function EventPage({ id }) {
             type="button"
             disabled={busy}
             onClick={toggleGoing}
+            aria-pressed={!!e.isGoing}
             className={`${btn} ${e.isGoing ? 'bg-navy text-paper' : 'bg-coral-deep text-white'}`}
           >
             {e.isGoing && <Icon name="check" size={16} />} Eu vou
@@ -136,12 +162,40 @@ export default function EventPage({ id }) {
           <p className="m-0 text-center text-xs text-navy-soft">«Eu vou» é só um sinal de interesse, não é uma reserva.</p>
         </div>
       )}
-      {e.isMine && !e.cancelled && (
-        <button type="button" disabled={busy} onClick={cancel} className={`${btn} border border-ruby text-ruby`}>
-          Cancelar evento
-        </button>
+      {e.isMine &&
+        !e.cancelled &&
+        (confirming ? (
+          <div className="space-y-3 rounded-3xl bg-paper p-4">
+            <p className="m-0 text-center text-sm font-semibold">Cancelar este evento?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setConfirming(false)}
+                className={`${btn} border border-navy/20 text-navy`}
+              >
+                Voltar
+              </button>
+              <button type="button" disabled={busy} onClick={cancel} className={`${btn} bg-ruby text-white`}>
+                Sim, cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirming(true)}
+            className={`${btn} border border-ruby text-ruby`}
+          >
+            Cancelar evento
+          </button>
+        ))}
+      {msg && (
+        <p role="alert" className="m-0 text-center text-sm text-ruby">
+          {msg}
+        </p>
       )}
-      {msg && <p className="m-0 text-center text-sm text-ruby">{msg}</p>}
     </main>
   );
 }

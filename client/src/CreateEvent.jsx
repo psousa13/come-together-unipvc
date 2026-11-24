@@ -88,7 +88,7 @@ export default function CreateEvent({ onDone }) {
           rows={4}
           onChange={set('description')}
           placeholder="O que vai acontecer? O que devem levar?"
-          className="w-full resize-none rounded-2xl border border-line bg-white px-4 py-3 text-[15px] outline-none placeholder:text-navy-soft focus:border-coral-deep"
+          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-[15px] text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
         />
       </div>
       <div className="space-y-1.5">

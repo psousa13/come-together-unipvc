@@ -178,3 +178,28 @@ html, body {
 .card .muted, .legacy .muted { margin: 0; color: var(--color-navy-soft); font-size: 0.875rem; }
 .card .error { margin: 0; color: var(--color-ruby); font-size: 0.9rem; }
 .leaflet-container { background: #e9eff8; }
+/* Design audit: grain, hover lift, skeleton */
+body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .004 0 0 0 0 .07 0 0 0 0 .16 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.lift {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -14px rgb(1 18 40 / 0.35);
+  }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-sand-deep) 0%, var(--color-sand) 50%, var(--color-sand-deep) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-contrast: more), (forced-colors: active) {
+  body { background-image: none; }
+}

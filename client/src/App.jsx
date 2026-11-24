@@ -4,6 +4,7 @@ import { useAuth } from './useAuth.js';
 import { api } from './api.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import Notice from './Notice.jsx';
 import Profile from './Profile.jsx';
 import ProfileForm from './ProfileForm.jsx';
 import Settings from './Settings.jsx';
@@ -29,15 +30,19 @@ const HEAD = {
   Perfil: { title: 'Perfil', sub: 'A tua conta e atividade' },
 };
 const SOON = {
-  Início: 'O feed de publicações e avaliações chega em breve.',
-  Comunidades: 'As comunidades chegam em breve.',
+  Início: { icon: 'home', text: 'O feed de publicações e avaliações chega em breve.' },
+  Comunidades: { icon: 'users', text: 'As comunidades chegam em breve.' },
 };
 const PROFILE_PAGES = ['edit', 'find', 'settings', 'notifsettings'];
 
-function Soon({ text }) {
+function Soon({ icon, text }) {
   return (
-    <div className="mx-5 rounded-3xl border border-dashed border-navy/25 p-6 text-center text-sm text-navy-soft lg:mx-8">
-      {text}
+    <div className="mx-5 flex flex-col items-center gap-2 rounded-3xl bg-paper/60 px-6 py-10 text-center lg:mx-8">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-navy text-paper">
+        <Icon name={icon} size={22} />
+      </span>
+      <h2 className="m-0 font-display text-xl font-bold">Em breve</h2>
+      <p className="m-0 max-w-xs text-sm text-navy-soft">{text}</p>
     </div>
   );
 }
@@ -46,10 +51,12 @@ function UserSearch({ onOpen }) {
   const { getToken } = useAuth();
   const [q, setQ] = useState('');
   const [users, setUsers] = useState([]);
+  const [done, setDone] = useState(false);
 
   async function change(e) {
     const value = e.target.value;
     setQ(value);
+    setDone(false);
     if (value.trim().length < 2) {
       setUsers([]);
       return;
@@ -57,6 +64,7 @@ function UserSearch({ onOpen }) {
     try {
       const data = await api(`/users?q=${encodeURIComponent(value.trim())}`, { token: getToken() });
       setUsers(data.users);
+      setDone(true);
     } catch {
       setUsers([]);
     }
@@ -71,6 +79,9 @@ function UserSearch({ onOpen }) {
         aria-label="Procurar pessoas"
         className="w-full rounded-full border border-line bg-paper px-5 py-3 outline-none"
       />
+      {done && users.length === 0 && (
+        <Notice icon="search" title="Ninguém encontrado" text="Experimenta outro nome ou username." />
+      )}
       <ul className="m-0 list-none space-y-2 p-0">
         {users.map((u) => (
           <li key={u.id}>
@@ -210,7 +221,7 @@ export default function App() {
     content = (
       <>
         <BackBar onBack={back} title="Editar perfil" />
-        <div className="legacy px-5 lg:px-8">
+        <div className="px-5 lg:px-8">
           <ProfileForm mode="edit" onDone={() => back()} onCancel={back} />
         </div>
       </>
@@ -308,7 +319,7 @@ export default function App() {
         ) : tab === 'Eventos' ? (
           <Events onOpen={openEvent} onCreate={() => showPage({ t: 'create' })} />
         ) : (
-          <Soon text={SOON[tab]} />
+          <Soon {...SOON[tab]} />
         )}
       </>
     );
@@ -318,7 +329,7 @@ export default function App() {
   const profilePage = PROFILE_PAGES.includes(page?.t);
 
   return (
-    <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col bg-sand lg:max-w-[1280px] lg:flex-row">
+    <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col lg:max-w-[1280px] lg:flex-row">
       <div
         ref={scroller}
         className="app-content no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:mx-auto lg:max-w-[920px]"
