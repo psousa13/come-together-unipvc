@@ -6,6 +6,8 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Profile from './Profile.jsx';
 import ProfileForm from './ProfileForm.jsx';
+import Settings from './Settings.jsx';
+import NotificationSettings from './NotificationSettings.jsx';
 import Events from './Events.jsx';
 import EventPage from './EventPage.jsx';
 import CreateEvent from './CreateEvent.jsx';
@@ -30,6 +32,7 @@ const SOON = {
   Início: 'O feed de publicações e avaliações chega em breve.',
   Comunidades: 'As comunidades chegam em breve.',
 };
+const PROFILE_PAGES = ['edit', 'find', 'settings', 'notifsettings'];
 
 function Soon({ text }) {
   return (
@@ -87,7 +90,7 @@ function UserSearch({ onOpen }) {
   );
 }
 
-function Header({ tab, user, unread, onBell }) {
+function Header({ tab, user, unread, onBell, onSettings }) {
   const head = HEAD[tab];
   return (
     <header className="flex items-end gap-3 px-5 pb-4 pt-[max(env(safe-area-inset-top),2rem)] lg:h-32 lg:px-8 lg:pt-0">
@@ -98,21 +101,34 @@ function Header({ tab, user, unread, onBell }) {
         </h1>
         <p className="mt-1.5 truncate text-sm text-navy-soft">{head.sub}</p>
       </div>
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={onBell}
-          title="Notificações"
-          aria-label={unread > 0 ? `Notificações (${unread} por ler)` : 'Notificações'}
-          className="hit grid h-10 w-10 place-items-center rounded-full bg-navy text-paper shadow-sm"
-        >
-          <Icon name="bell" size={18} />
-        </button>
-        {unread > 0 && (
-          <span className="pointer-events-none absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ruby px-1 text-[11px] font-bold leading-none text-paper">
-            {unread > 9 ? '9+' : unread}
-          </span>
+      <div className="flex shrink-0 items-center gap-2">
+        {tab === 'Perfil' && (
+          <button
+            type="button"
+            onClick={onSettings}
+            title="Definições"
+            aria-label="Definições"
+            className="hit grid h-10 w-10 place-items-center rounded-full bg-paper shadow-sm"
+          >
+            <Icon name="gear" size={20} />
+          </button>
         )}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={onBell}
+            title="Notificações"
+            aria-label={unread > 0 ? `Notificações (${unread} por ler)` : 'Notificações'}
+            className="hit grid h-10 w-10 place-items-center rounded-full bg-navy text-paper shadow-sm"
+          >
+            <Icon name="bell" size={18} />
+          </button>
+          {unread > 0 && (
+            <span className="pointer-events-none absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ruby px-1 text-[11px] font-bold leading-none text-paper">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -137,7 +153,7 @@ function BackBar({ onBack, title }) {
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [tab, setTab] = useState('Início');
-  const [page, setPage] = useState(null);
+  const [stack, setStack] = useState([]);
   const [n, setN] = useState(0);
   const scroller = useRef(null);
   const [fresh, setFresh] = useState([]);
@@ -158,16 +174,28 @@ export default function App() {
   }
   if (!user.username) return <Setup />;
 
+  const page = stack[stack.length - 1] ?? null;
   const toTop = () => scroller.current?.scrollTo({ top: 0 });
+  const refresh = () => {
+    setN((x) => x + 1);
+    toTop();
+  };
   const go = (k) => {
     setTab(k);
-    setPage(null);
+    setStack([]);
     toTop();
   };
   const showPage = (p) => {
-    setPage(p);
-    setN((x) => x + 1);
-    toTop();
+    setStack((s) => [...s, p]);
+    refresh();
+  };
+  const replacePage = (p) => {
+    setStack((s) => [...s.slice(0, -1), p]);
+    refresh();
+  };
+  const back = () => {
+    setStack((s) => s.slice(0, -1));
+    refresh();
   };
   const openUser = (username) => showPage({ t: 'user', username });
   const openEvent = (id) => showPage({ t: 'event', id });
@@ -176,20 +204,35 @@ export default function App() {
     notif.markAllRead();
     showPage({ t: 'notifications' });
   };
-  const ownProfile = () => {
-    setTab('Perfil');
-    setN((x) => x + 1);
-    showPage(null);
-  };
-  const back = () => showPage(null);
 
   let content;
   if (page?.t === 'edit') {
     content = (
       <>
-        <BackBar onBack={ownProfile} title="Editar perfil" />
+        <BackBar onBack={back} title="Editar perfil" />
         <div className="legacy px-5 lg:px-8">
-          <ProfileForm mode="edit" onDone={ownProfile} onCancel={ownProfile} />
+          <ProfileForm mode="edit" onDone={() => back()} onCancel={back} />
+        </div>
+      </>
+    );
+  } else if (page?.t === 'settings') {
+    content = (
+      <>
+        <BackBar onBack={back} title="Definições" />
+        <div className="px-5 lg:px-8">
+          <Settings
+            onEdit={() => showPage({ t: 'edit' })}
+            onNotifications={() => showPage({ t: 'notifsettings' })}
+          />
+        </div>
+      </>
+    );
+  } else if (page?.t === 'notifsettings') {
+    content = (
+      <>
+        <BackBar onBack={back} title="Notificações" />
+        <div className="px-5 lg:px-8">
+          <NotificationSettings />
         </div>
       </>
     );
@@ -206,12 +249,13 @@ export default function App() {
     content = (
       <>
         <BackBar onBack={back} title="Perfil" />
-        <div className="legacy px-5 lg:px-8">
+        <div className="px-5 lg:px-8">
           <Profile
             key={n}
             username={page.username}
             onEdit={() => showPage({ t: 'edit' })}
             onOpen={openUser}
+            onFind={() => showPage({ t: 'find' })}
           />
         </div>
       </>
@@ -239,30 +283,29 @@ export default function App() {
       <>
         <BackBar onBack={back} title="Criar evento" />
         <div className="px-5 lg:px-8">
-          <CreateEvent onDone={openEvent} />
+          <CreateEvent onDone={(id) => replacePage({ t: 'event', id })} />
         </div>
       </>
     );
   } else {
     content = (
       <>
-        <Header tab={tab} user={user} unread={notif.unread} onBell={openBell} />
+        <Header
+          tab={tab}
+          user={user}
+          unread={notif.unread}
+          onBell={openBell}
+          onSettings={() => showPage({ t: 'settings' })}
+        />
         {tab === 'Perfil' ? (
-          <div className="legacy space-y-4 px-5 lg:px-8">
+          <div className="px-5 lg:px-8">
             <Profile
               key={n}
               username={user.username}
               onEdit={() => showPage({ t: 'edit' })}
               onOpen={openUser}
+              onFind={() => showPage({ t: 'find' })}
             />
-            <div className="flex gap-2">
-              <button type="button" onClick={() => showPage({ t: 'find' })}>
-                Encontrar pessoas
-              </button>
-              <button type="button" onClick={logout}>
-                Terminar sessão
-              </button>
-            </div>
           </div>
         ) : tab === 'Eventos' ? (
           <Events onOpen={openEvent} onCreate={() => showPage({ t: 'create' })} />
@@ -274,6 +317,7 @@ export default function App() {
   }
 
   const eventPage = page?.t === 'event' || page?.t === 'create';
+  const profilePage = PROFILE_PAGES.includes(page?.t);
 
   return (
     <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col bg-sand lg:max-w-[1280px] lg:flex-row">
@@ -281,7 +325,10 @@ export default function App() {
         ref={scroller}
         className="app-content no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:mx-auto lg:max-w-[920px]"
       >
-        <div className="rise" key={`${tab}-${page?.t ?? ''}-${page?.username ?? page?.id ?? ''}`}>
+        <div
+          className="rise"
+          key={`${tab}-${stack.length}-${page?.t ?? ''}-${page?.username ?? page?.id ?? ''}`}
+        >
           {content}
         </div>
       </div>
@@ -290,7 +337,9 @@ export default function App() {
         className="floating-nav absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-50 grid grid-cols-4 rounded-full p-2 lg:static lg:order-first lg:m-6 lg:mr-0 lg:mt-10 lg:w-60 lg:shrink-0 lg:grid-cols-1 lg:self-start lg:rounded-3xl"
       >
         {NAV.map(([label, icon]) => {
-          const active = tab === label && (!page || (eventPage && label === 'Eventos'));
+          const active =
+            tab === label &&
+            (!page || (eventPage && label === 'Eventos') || (profilePage && label === 'Perfil'));
           return (
             <button
               key={label}

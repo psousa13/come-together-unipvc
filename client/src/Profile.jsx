@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
-export default function Profile({ username, onEdit, onOpen }) {
+const outline =
+  'hit flex items-center justify-center gap-1.5 rounded-full border border-navy/30 py-2.5 text-sm font-bold transition hover:bg-paper active:scale-95';
+
+export default function Profile({ username, onEdit, onOpen, onFind }) {
   const { getToken } = useAuth();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
@@ -45,55 +49,97 @@ export default function Profile({ username, onEdit, onOpen }) {
     }
   }
 
-  if (error && !profile) return <p style={{ color: 'crimson' }}>{error}</p>;
+  if (error && !profile) return <p className="text-sm text-ruby">{error}</p>;
   if (!profile) return null;
 
+  const where = [profile.school, profile.course].filter(Boolean).join(' · ');
+  const counts = [
+    ['followers', profile.followersCount, 'Seguidores'],
+    ['following', profile.followingCount, 'A seguir'],
+  ];
+
   return (
-    <section>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar user={profile} size={72} />
-        <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0 }}>{profile.displayName}</h2>
-          <div className="muted">
-            @{profile.username}
-            {profile.school ? ` · ${profile.school}` : ''}
-          </div>
+    <section className="space-y-4 pb-4">
+      <div className="flex flex-col items-center text-center">
+        <Avatar user={profile} size={112} ring />
+        <h2 className="mt-3 font-display text-2xl font-bold leading-tight">{profile.displayName}</h2>
+        <p className="text-sm text-navy-soft">@{profile.username}</p>
+        {where && <p className="mt-0.5 text-sm font-semibold">{where}</p>}
+        {profile.memberType && profile.memberType !== 'Estudante' && (
+          <span className="mt-1 rounded-full bg-sand-deep px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider">
+            {profile.memberType}
+          </span>
+        )}
+        {profile.bio && <p className="mt-2 max-w-[280px] text-sm">{profile.bio}</p>}
+
+        <div className="mt-4 flex items-center gap-8">
+          {counts.map(([kind, n, label]) => (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => showList(kind)}
+              aria-pressed={list?.kind === kind}
+              className="hit text-center"
+            >
+              <div className="font-display text-xl font-bold leading-none">{n.toLocaleString('pt-PT')}</div>
+              <div className="mt-1 text-xs text-navy-soft">{label}</div>
+            </button>
+          ))}
         </div>
+
         {profile.isMe ? (
-          <button onClick={onEdit}>Editar</button>
+          <div className="mt-4 grid w-full max-w-[340px] grid-cols-2 gap-2.5">
+            <button type="button" onClick={onEdit} className={outline}>
+              <Icon name="edit" size={16} /> Editar perfil
+            </button>
+            <button
+              type="button"
+              onClick={onFind}
+              className="hit flex items-center justify-center gap-1.5 rounded-full bg-gold py-2.5 text-sm font-bold text-navy transition active:scale-95"
+            >
+              <Icon name="search" size={16} /> Encontrar pessoas
+            </button>
+          </div>
         ) : (
-          <button onClick={toggleFollow} disabled={busy}>
+          <button
+            type="button"
+            onClick={toggleFollow}
+            disabled={busy}
+            aria-pressed={profile.isFollowing}
+            className={`mt-4 rounded-full px-6 py-2.5 text-sm font-bold transition active:scale-95 disabled:opacity-50 ${
+              profile.isFollowing ? 'border border-navy/30' : 'bg-coral-deep text-white'
+            }`}
+          >
             {profile.isFollowing ? 'A seguir' : 'Seguir'}
           </button>
         )}
       </div>
 
-      {profile.bio && <p>{profile.bio}</p>}
-
-      <div style={{ display: 'flex', gap: 16, margin: '8px 0' }}>
-        <button type="button" onClick={() => showList('followers')}>
-          {profile.followersCount} seguidores
-        </button>
-        <button type="button" onClick={() => showList('following')}>
-          {profile.followingCount} a seguir
-        </button>
-      </div>
-
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
+      {error && <p className="text-center text-sm text-ruby">{error}</p>}
 
       {list && (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {list.users.length === 0 && <li className="muted">Ninguém ainda.</li>}
+        <ul className="m-0 list-none space-y-2 p-0">
+          {list.users.length === 0 && (
+            <li className="rounded-3xl border border-dashed border-navy/25 p-5 text-center text-sm text-navy-soft">
+              Ninguém ainda.
+            </li>
+          )}
           {list.users.map((u) => (
             <li key={u.id}>
               <button
                 type="button"
                 onClick={() => onOpen(u.username)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}
+                className="flex w-full items-center gap-3 rounded-3xl bg-paper p-3 text-left"
               >
-                <Avatar user={u} size={28} />
-                <span>{u.displayName}</span>
-                <span className="muted">@{u.username}</span>
+                <Avatar user={u} size={40} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{u.displayName}</span>
+                  <span className="block truncate text-xs text-navy-soft">
+                    @{u.username}
+                    {u.school ? ` · ${u.school}` : ''}
+                  </span>
+                </span>
+                <Icon name="chev" size={16} />
               </button>
             </li>
           ))}
