@@ -1,4 +1,5 @@
 const Notification = require('./models/Notification');
+const User = require('./models/User');
 const { emitToUser } = require('./realtime');
 
 function toJson(n) {
@@ -16,6 +17,8 @@ function toJson(n) {
 
 async function notifyGoing({ organizerId, actor, event }) {
   try {
+    const organizer = await User.findById(organizerId).select('notificationPrefs');
+    if (organizer?.notificationPrefs?.going === false) return;
     const seen = await Notification.exists({
       user: organizerId,
       type: 'going',

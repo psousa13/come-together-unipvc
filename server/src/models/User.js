@@ -13,6 +13,10 @@ const userSchema = new Schema(
     bio: { type: String, trim: true, maxlength: 160, default: '' },
     role: { type: String, enum: ['member', 'admin'], default: 'member' },
     following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    notificationPrefs: {
+      going: { type: Boolean, default: true },
+      reminders: { type: Boolean, default: true },
+    },
   },
   { timestamps: true }
 );

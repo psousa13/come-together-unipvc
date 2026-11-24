@@ -60,7 +60,7 @@ router.patch('/me', async (req, res) => {
     return res.status(403).json({ error: 'A conta de administração não tem perfil.' });
   }
 
-  const { displayName, username, school, memberType, course, bio, avatar } = req.body;
+  const { displayName, username, school, memberType, course, bio, avatar, notificationPrefs } = req.body;
 
   if (displayName !== undefined) {
     const value = String(displayName).trim();
@@ -111,6 +111,22 @@ router.patch('/me', async (req, res) => {
       return res.status(400).json({ error: 'A bio pode ter no máximo 160 caracteres.' });
     }
     user.bio = value;
+  }
+
+  if (notificationPrefs !== undefined) {
+    const ok =
+      notificationPrefs &&
+      typeof notificationPrefs === 'object' &&
+      !Array.isArray(notificationPrefs) &&
+      Object.entries(notificationPrefs).every(
+        ([k, v]) => ['going', 'reminders'].includes(k) && typeof v === 'boolean'
+      );
+    if (!ok) {
+      return res.status(400).json({ error: 'Preferências de notificações inválidas.' });
+    }
+    for (const [k, v] of Object.entries(notificationPrefs)) {
+      user.notificationPrefs[k] = v;
+    }
   }
 
   if (avatar !== undefined) {

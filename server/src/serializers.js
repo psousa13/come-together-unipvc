@@ -9,6 +9,10 @@ const publicUser = (u) => ({
   course: u.course,
   bio: u.bio || '',
   role: u.role,
+  notificationPrefs: {
+    going: u.notificationPrefs?.going !== false,
+    reminders: u.notificationPrefs?.reminders !== false,
+  },
 });
 
 module.exports = { publicUser };
