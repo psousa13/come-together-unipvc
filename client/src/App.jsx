@@ -253,7 +253,6 @@ export default function App() {
           <Profile
             key={n}
             username={page.username}
-            onEdit={() => showPage({ t: 'edit' })}
             onOpen={openUser}
             onFind={() => showPage({ t: 'find' })}
           />
@@ -302,7 +301,6 @@ export default function App() {
             <Profile
               key={n}
               username={user.username}
-              onEdit={() => showPage({ t: 'edit' })}
               onOpen={openUser}
               onFind={() => showPage({ t: 'find' })}
             />

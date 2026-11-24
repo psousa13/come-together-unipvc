@@ -4,10 +4,7 @@ import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 
-const outline =
-  'hit flex items-center justify-center gap-1.5 rounded-full border border-navy/30 py-2.5 text-sm font-bold transition hover:bg-paper active:scale-95';
-
-export default function Profile({ username, onEdit, onOpen, onFind }) {
+export default function Profile({ username, onOpen, onFind }) {
   const { getToken } = useAuth();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
@@ -88,18 +85,13 @@ export default function Profile({ username, onEdit, onOpen, onFind }) {
         </div>
 
         {profile.isMe ? (
-          <div className="mt-4 grid w-full max-w-[340px] grid-cols-2 gap-2.5">
-            <button type="button" onClick={onEdit} className={outline}>
-              <Icon name="edit" size={16} /> Editar perfil
-            </button>
-            <button
-              type="button"
-              onClick={onFind}
-              className="hit flex items-center justify-center gap-1.5 rounded-full bg-gold py-2.5 text-sm font-bold text-navy transition active:scale-95"
-            >
-              <Icon name="search" size={16} /> Encontrar pessoas
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onFind}
+            className="hit mt-4 flex w-full max-w-[340px] items-center justify-center gap-1.5 rounded-full bg-gold py-2.5 text-sm font-bold text-navy transition active:scale-95"
+          >
+            <Icon name="search" size={16} /> Encontrar pessoas
+          </button>
         ) : (
           <button
             type="button"
