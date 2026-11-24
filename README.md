@@ -38,8 +38,9 @@ Princípio de produto: descoberta primeiro (mapa, filtros, avisos), parte social
 2. Perfis: nome, username, foto, escola, tipo de membro (Estudante, Staff, Erasmus), curso e bio. Pesquisa de pessoas, seguir e deixar de seguir, listas de seguidores e seguidos.
 3. Eventos: criar, listar com filtros (escola, texto, datas, origem, vistas Próximos, Eu vou, Meus e Passados), página do evento, «Eu vou» e cancelar. Os eventos oficiais são criados pela conta de administração.
 4. Notificações em tempo real com Socket.IO: quando alguém marca «Eu vou» num evento teu, o sino mostra um contador de não lidas e a lista de notificações, que fica guardada na base de dados.
+5. Definições e perfil: o perfil tem avatar, escola, curso e contadores de seguidores, e a engrenagem do separador Perfil abre as Definições, onde cada utilizador liga ou desliga os avisos de «Eu vou» e os lembretes (estes ainda sem efeito). O botão voltar regressa sempre ao ecrã anterior.
 
-Em desenvolvimento: mapa por campus, comunidades, feed e avaliações, definições de notificações, lembretes e permissões. Ver a tabela de requisitos mais abaixo.
+Em desenvolvimento: mapa por campus, comunidades, feed e avaliações, lembretes e permissões. Ver a tabela de requisitos mais abaixo.
 
 ## Stack
 
@@ -61,6 +62,7 @@ Restrição do grupo: tudo gratuito. Por isso os avatares ficam guardados no Mon
 /client   Vite React
   /src    App.jsx (shell e navegação), Access.jsx (splash, login, código, setup),
           Events.jsx, EventPage.jsx, CreateEvent.jsx, Notifications.jsx,
+          Settings.jsx, NotificationSettings.jsx,
           Profile.jsx, ProfileForm.jsx, AuthProvider.jsx, api.js, socket.js,
           useNotifications.js, schools.js, ...
 /server   Express API
@@ -166,7 +168,7 @@ Base: `/api`. Os erros vêm em PT-PT no formato `{ "error": "..." }`. Todas as r
 | `GET /api/auth/me` | Utilizador da sessão |
 | `GET /api/users?q=` | Pesquisa de pessoas por username ou nome |
 | `GET /api/users/username-available?username=` | Verifica se o username está livre |
-| `PATCH /api/users/me` | Edita o perfil |
+| `PATCH /api/users/me` | Edita o perfil e as preferências de notificações (`notificationPrefs`: `going` e `reminders`) |
 | `GET /api/users/:username` | Perfil público |
 | `POST` e `DELETE /api/users/:username/follow` | Seguir e deixar de seguir |
 | `GET /api/users/:username/followers` e `/following` | Listas de seguidores e seguidos |
@@ -181,7 +183,7 @@ Base: `/api`. Os erros vêm em PT-PT no formato `{ "error": "..." }`. Todas as r
 Limites de pedidos (por IP, janela de 15 minutos): 5 pedidos de código e 20 tentativas falhadas de verificação ou de login de administração.
 ## Tempo real
 
-O cliente liga-se ao Socket.IO com o JWT em `auth.token`. O servidor valida o token e coloca a ligação na sala `user:<id>`. Quando alguém marca «Eu vou» pela primeira vez num evento de outra pessoa, o servidor guarda uma notificação e emite o evento `notification` para o organizador. A mesma pessoa a repetir a ação no mesmo evento não gera uma segunda notificação, e o organizador não é notificado das suas próprias marcações. Se o organizador estiver offline, a notificação fica na base de dados e aparece quando abrir a app.
+O cliente liga-se ao Socket.IO com o JWT em `auth.token`. O servidor valida o token e coloca a ligação na sala `user:<id>`. Quando alguém marca «Eu vou» pela primeira vez num evento de outra pessoa, o servidor guarda uma notificação e emite o evento `notification` para o organizador. A mesma pessoa a repetir a ação no mesmo evento não gera uma segunda notificação, e o organizador não é notificado das suas próprias marcações. Se o organizador estiver offline, a notificação fica na base de dados e aparece quando abrir a app. O organizador pode desligar estes avisos nas Definições (`notificationPrefs.going`): com o interruptor desligado, a notificação não é criada nem enviada.
 
 ## Deploy
 
@@ -225,7 +227,7 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 | RF27 | Criar comunidade | Por fazer |
 | RF28 | Comunidades públicas e privadas | Por fazer |
 | RF32 | Notificação em tempo real do «Eu vou» | Feito |
-| RF36 | Configurar notificações | Por fazer |
+| RF36 | Configurar notificações | Parcial (preferências guardadas; só o aviso de «Eu vou» é aplicado, os lembretes dependem do RF41) |
 | RF37 | Três níveis de permissões | Parcial (só utilizador e administração) |
 | RF41 | Lembretes antes do evento | Por fazer |
 
@@ -235,6 +237,7 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 2. Os códigos de login enviados pelo Brevo (remetente Gmail pessoal) podem ir para a pasta de spam.
 3. Só são aceites emails dos domínios em `ALLOWED_EMAIL_DOMAINS`.
 4. O ecrã de criar evento só aceita uma data, por isso não permite eventos que acabam depois da meia-noite.
+5. O interruptor «Lembretes de eventos» das Definições já grava a preferência, mas não tem efeito até os lembretes (RF41) existirem.
 
 ## Uso de IA
 
