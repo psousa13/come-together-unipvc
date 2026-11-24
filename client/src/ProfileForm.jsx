@@ -1,41 +1,20 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
+import Dropdown from './Dropdown.jsx';
+import Icon from './Icon.jsx';
+import { resizeImage } from './image.js';
+import { SCHOOLS, SCHOOL_NAMES } from './schools.js';
+import { field, label, primary } from './ui.js';
 
-const SCHOOLS = [
-  ['ESA', 'ESA – Agrária'],
-  ['ESCE', 'ESCE – Ciências Empresariais'],
-  ['ESDL', 'ESDL – Desporto e Lazer'],
-  ['ESE', 'ESE – Educação'],
-  ['ESS', 'ESS – Saúde'],
-  ['ESTG', 'ESTG – Tecnologia e Gestão'],
+const SCHOOL_OPTIONS = [
+  { value: '', label: 'Sem escola' },
+  ...SCHOOLS.map((k) => ({ value: k, label: `${k} · ${SCHOOL_NAMES[k]}` })),
 ];
 
-function resizeImage(file, size = 256) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const side = Math.min(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      canvas
-        .getContext('2d')
-        .drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Imagem inválida.'));
-    };
-    img.src = url;
-  });
-}
-
-const field = { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 };
+const secondary =
+  'flex h-13 w-full items-center justify-center rounded-full border border-navy/20 bg-paper text-[15px] font-bold text-navy transition active:scale-[0.97]';
 
 export default function ProfileForm({ mode, onDone, onCancel }) {
   const { user, getToken, updateUser, logout } = useAuth();
@@ -46,27 +25,33 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
   const [bio, setBio] = useState(user.bio || '');
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [error, setError] = useState('');
-  const [hint, setHint] = useState('');
+  const [hint, setHint] = useState({ text: '', tone: '' });
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
 
   async function checkUsername() {
     const value = username.trim().toLowerCase();
     if (!value || value === user.username) {
-      setHint('');
+      setHint({ text: '', tone: '' });
       return;
     }
     try {
       const data = await api(`/users/username-available?username=${encodeURIComponent(value)}`, {
         token: getToken(),
       });
-      setHint(data.available ? 'Disponível.' : 'Indisponível ou inválido.');
+      setHint(
+        data.available
+          ? { text: `@${value} está disponível.`, tone: 'ok' }
+          : { text: `@${value} não está disponível ou é inválido.`, tone: 'bad' },
+      );
     } catch {
-      setHint('');
+      setHint({ text: '', tone: '' });
     }
   }
 
   async function pickImage(e) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     try {
       setAvatar(await resizeImage(file));
@@ -95,78 +80,119 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
     }
   }
 
+  const tone = hint.tone === 'ok' ? 'text-[#1c6b43]' : hint.tone === 'bad' ? 'font-semibold text-ruby' : 'text-navy-soft';
+
   return (
-    <main className="card">
-      <h1>{onboarding ? 'Completa o teu perfil' : 'Editar perfil'}</h1>
-      <form onSubmit={submit}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+    <form onSubmit={submit} className="space-y-5 pb-4">
+      {onboarding && <h1 className="m-0 font-display text-[30px] font-bold leading-tight">Completa o teu perfil</h1>}
+      <div>
+        <p className={`${label} mb-1.5`}>Foto</p>
+        <div className="flex items-center gap-3">
           <Avatar user={{ avatar, displayName }} size={64} />
-          <div>
-            <input type="file" accept="image/*" onChange={pickImage} />
-            {avatar && (
-              <button type="button" onClick={() => setAvatar('')}>
-                Remover
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="h-11 rounded-full border border-navy/20 bg-paper px-4 text-sm font-bold text-navy"
+          >
+            {avatar ? 'Mudar' : 'Escolher foto'}
+          </button>
+          {avatar && (
+            <button
+              type="button"
+              onClick={() => setAvatar('')}
+              className="h-11 rounded-full border-0 bg-transparent px-2 text-sm font-bold text-navy-soft"
+            >
+              Remover
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickImage} />
         </div>
+      </div>
 
-        <label style={field}>
-          Nome
-          <input value={displayName} maxLength={50} onChange={(e) => setDisplayName(e.target.value)} required />
-        </label>
+      <div className="space-y-1.5">
+        <label htmlFor="pf-name" className={label}>Nome</label>
+        <input
+          id="pf-name"
+          value={displayName}
+          maxLength={50}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
+          className={field}
+        />
+      </div>
 
-        <label style={field}>
-          Username
+      <div className="space-y-1.5">
+        <label htmlFor="pf-user" className={label}>Nome de utilizador</label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-navy-soft">@</span>
           <input
+            id="pf-user"
             value={username}
             maxLength={20}
-            placeholder="joaofernandes"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-describedby="pf-user-msg"
             onChange={(e) => {
-              setUsername(e.target.value);
-              setHint('');
+              setUsername(e.target.value.toLowerCase().replace(/\s/g, ''));
+              setHint({ text: '', tone: '' });
             }}
             onBlur={checkUsername}
             required
+            className={`${field} pl-9`}
           />
-          {hint && <span className="muted">{hint}</span>}
-        </label>
-
-        <label style={field}>
-          Escola
-          <select value={school} onChange={(e) => setSchool(e.target.value)}>
-            <option value="">—</option>
-            {SCHOOLS.map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={field}>
-          Bio
-          <textarea value={bio} maxLength={160} rows={2} onChange={(e) => setBio(e.target.value)} />
-          <span className="muted">{bio.length}/160</span>
-        </label>
-
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" disabled={busy}>
-            Guardar
-          </button>
-          {onboarding ? (
-            <button type="button" onClick={logout}>
-              Sair
-            </button>
-          ) : (
-            <button type="button" onClick={onCancel}>
-              Cancelar
-            </button>
-          )}
         </div>
-      </form>
-    </main>
+        <p id="pf-user-msg" aria-live="polite" className={`m-0 px-1 text-xs ${tone}`}>
+          {hint.text}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="pf-school" className={label}>Escola</label>
+        <Dropdown
+          id="pf-school"
+          label="Escola"
+          value={school}
+          onChange={setSchool}
+          options={SCHOOL_OPTIONS}
+          placeholder="Escolhe a tua escola"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="pf-bio" className={label}>Bio</label>
+        <textarea
+          id="pf-bio"
+          value={bio}
+          maxLength={160}
+          rows={3}
+          onChange={(e) => setBio(e.target.value)}
+          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-[15px] text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
+        />
+        <p className="m-0 px-1 text-right text-xs text-navy-soft">{bio.length}/160</p>
+      </div>
+
+      {error && (
+        <p role="alert" className="m-0 flex items-start gap-1.5 text-sm font-semibold text-ruby">
+          <Icon name="info" size={16} />
+          <span>{error}</span>
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <button type="submit" disabled={busy} className={primary}>
+          {busy ? 'A guardar…' : 'Guardar'}
+        </button>
+        {onboarding ? (
+          <button type="button" onClick={logout} className={secondary}>
+            Sair
+          </button>
+        ) : (
+          <button type="button" onClick={onCancel} className={secondary}>
+            Cancelar
+          </button>
+        )}
+      </div>
+    </form>
   );
 }
