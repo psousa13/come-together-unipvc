@@ -6,7 +6,7 @@ import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
 import { SCHOOLS } from './schools.js';
 import { goingText, whenShort } from './format.js';
-import { field, primary } from './ui.js';
+import { field } from './ui.js';
 
 const VIEWS = [
   ['next', 'Próximos'],
@@ -15,7 +15,7 @@ const VIEWS = [
   ['past', 'Passados'],
 ];
 
-const SCHOOL_OPTIONS = [{ value: '', label: 'Todas as escolas' }, ...SCHOOLS.map((s) => ({ value: s, label: s }))];
+const SCHOOL_OPTIONS = [{ value: '', label: 'Todas' }, ...SCHOOLS.map((s) => ({ value: s, label: s }))];
 
 function queryOf(view, school, q) {
   const p = new URLSearchParams();
@@ -42,7 +42,7 @@ function Card({ e, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(e.id)}
-      className="lift flex w-full gap-4 rounded-3xl bg-paper p-4 text-left shadow-sm"
+      className="lift flex w-full gap-3 rounded-3xl bg-paper p-3 text-left shadow-sm"
     >
       {d && (
         <div
@@ -54,7 +54,7 @@ function Card({ e, onOpen }) {
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
           <span className="rounded-full bg-sand px-2.5 py-1">{e.school}</span>
           {e.origin === 'official' && <span className="rounded-full bg-navy px-2.5 py-1 text-paper">UniPVC</span>}
           {e.isGoing && (
@@ -63,9 +63,9 @@ function Card({ e, onOpen }) {
             </span>
           )}
         </div>
-        <h3 className="m-0 font-display text-lg font-bold leading-tight">{e.title}</h3>
+        <h3 className="m-0 break-words font-display text-lg font-bold leading-tight">{e.title}</h3>
         <p className="m-0 text-sm font-semibold">{whenShort(e.startsAt)}</p>
-        {e.location?.name && <p className="m-0 text-sm text-navy-soft">{e.location.name}</p>}
+        {e.location?.name && <p className="m-0 break-words text-sm text-navy-soft">{e.location.name}</p>}
         <p className="m-0 text-xs text-navy-soft">{goingText(e.attendeesCount)}</p>
       </div>
     </button>
@@ -74,7 +74,7 @@ function Card({ e, onOpen }) {
 
 function SkeletonCard() {
   return (
-    <div className="flex gap-4 rounded-3xl bg-paper p-4 shadow-sm">
+    <div className="flex gap-3 rounded-3xl bg-paper p-3 shadow-sm">
       <div className="skeleton h-16 w-14 shrink-0 rounded-2xl" />
       <div className="flex flex-1 flex-col gap-2.5 py-1">
         <div className="skeleton h-3 w-24 rounded-full" />
@@ -85,7 +85,7 @@ function SkeletonCard() {
   );
 }
 
-export default function Events({ onOpen, onCreate }) {
+export default function Events({ onOpen }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
   const [view, setView] = useState('next');
@@ -128,31 +128,32 @@ export default function Events({ onOpen, onCreate }) {
   }
 
   return (
-    <div className="space-y-4 px-5 lg:px-8">
-      <button type="button" onClick={onCreate} className={primary}>
-        <Icon name="plus" size={18} /> Criar evento
-      </button>
-      <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-navy-soft">
-          <Icon name="search" size={17} />
-        </span>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Procurar eventos"
-          aria-label="Procurar eventos"
-          className={`${field} pl-11`}
-        />
+    <div className="space-y-3 px-5 lg:px-8">
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-navy-soft">
+            <Icon name="search" size={17} />
+          </span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Procurar"
+            aria-label="Procurar eventos"
+            className={`${field} pl-11`}
+          />
+        </div>
+        <div className="w-32 shrink-0">
+          <Dropdown
+            id="ev-school"
+            label="Escola"
+            value={school}
+            onChange={setSchool}
+            options={SCHOOL_OPTIONS}
+            placeholder="Todas"
+          />
+        </div>
       </div>
-      <Dropdown
-        id="ev-school"
-        label="Escola"
-        value={school}
-        onChange={setSchool}
-        options={SCHOOL_OPTIONS}
-        placeholder="Todas as escolas"
-      />
-      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0">
+      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 py-1 lg:mx-0 lg:px-0">
         {VIEWS.map(([k, name]) => (
           <button
             key={k}

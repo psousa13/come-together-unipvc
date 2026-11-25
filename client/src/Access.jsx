@@ -27,7 +27,7 @@ function Mark({ size = 44 }) {
 
 function Screen({ step, onBack, footer, children }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[480px] lg:max-w-[640px] flex-col bg-sand pt-[calc(max(env(safe-area-inset-top),3.25rem)+0.75rem)]">
+    <div className="mx-auto flex min-h-dvh max-w-[480px] lg:max-w-[640px] flex-col bg-sand pt-[calc(env(safe-area-inset-top)+1rem)]">
       <div className="flex items-center gap-3 px-5">
         <button
           type="button"
@@ -64,7 +64,7 @@ function Splash({ onStart }) {
   const delay = (ms) => ({ animationDelay: `${ms}ms`, animationFillMode: 'backwards' });
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-navy text-paper">
-      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-between px-5 pb-8 pt-[calc(max(env(safe-area-inset-top),3.25rem)+0.75rem)] lg:my-auto lg:grid lg:max-w-[1120px] lg:flex-none lg:grid-cols-[1.25fr_1fr] lg:items-end lg:gap-x-20 lg:gap-y-10 lg:px-10 lg:py-16">
+      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-between px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-[calc(env(safe-area-inset-top)+1rem)] lg:my-auto lg:grid lg:max-w-[1120px] lg:flex-none lg:grid-cols-[1.25fr_1fr] lg:items-end lg:gap-x-20 lg:gap-y-10 lg:px-10 lg:py-16">
         <div className="relative flex items-center gap-2 lg:col-span-2">
           <Mark />
           <span className="text-sm font-bold uppercase tracking-[0.2em] text-gold">UniPVC</span>

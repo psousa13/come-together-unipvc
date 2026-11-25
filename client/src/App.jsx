@@ -46,10 +46,10 @@ function Soon({ icon, text }) {
   );
 }
 
-function Header({ tab, user, unread, onBell, onSettings }) {
+function Header({ tab, user, unread, onBell, onSettings, onCreate }) {
   const head = HEAD[tab];
   return (
-    <header className="flex items-end gap-3 px-5 pb-4 pt-[max(env(safe-area-inset-top),2rem)] lg:h-32 lg:px-8 lg:pt-0">
+    <header className="flex items-end gap-3 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:h-32 lg:px-8 lg:pt-0">
       <div className="min-w-0 flex-1">
         <h1 className="m-0 truncate font-display text-[30px] font-bold leading-none">
           {head.title}
@@ -58,6 +58,16 @@ function Header({ tab, user, unread, onBell, onSettings }) {
         <p className="mt-1.5 truncate text-sm text-navy-soft">{head.sub}</p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        {tab === 'Eventos' && (
+          <button
+            type="button"
+            onClick={onCreate}
+            aria-label="Criar evento"
+            className="hit flex h-10 items-center gap-1.5 rounded-full bg-coral-deep px-4 text-sm font-bold text-white shadow-sm"
+          >
+            <Icon name="plus" size={16} /> Criar
+          </button>
+        )}
         {tab === 'Perfil' && (
           <button
             type="button"
@@ -92,7 +102,7 @@ function Header({ tab, user, unread, onBell, onSettings }) {
 
 function BackBar({ onBack, title }) {
   return (
-    <div className="flex items-center gap-2 px-5 pb-3 pt-[max(env(safe-area-inset-top),2rem)] lg:px-8 lg:pt-10">
+    <div className="flex items-center gap-2 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:px-8 lg:pt-10">
       <button
         type="button"
         onClick={onBack}
@@ -241,6 +251,7 @@ export default function App() {
           unread={notif.unread}
           onBell={openBell}
           onSettings={() => showPage({ t: 'settings' })}
+          onCreate={() => showPage({ t: 'create' })}
         />
         {tab === 'Perfil' ? (
           <div className="px-5 lg:px-8">
@@ -252,7 +263,7 @@ export default function App() {
             />
           </div>
         ) : tab === 'Eventos' ? (
-          <Events onOpen={openEvent} onCreate={() => showPage({ t: 'create' })} />
+          <Events onOpen={openEvent} />
         ) : (
           <Soon {...SOON[tab]} />
         )}
@@ -262,6 +273,7 @@ export default function App() {
 
   const eventPage = page?.t === 'event' || page?.t === 'create';
   const profilePage = PROFILE_PAGES.includes(page?.t);
+  const formPage = page?.t === 'create' || page?.t === 'edit';
 
   return (
     <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col lg:max-w-[1280px] lg:flex-row">
@@ -278,7 +290,7 @@ export default function App() {
       </div>
       <nav
         aria-label="Navegação principal"
-        className="floating-nav absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-50 grid grid-cols-4 rounded-full p-2 lg:static lg:order-first lg:m-6 lg:mr-0 lg:mt-10 lg:w-60 lg:shrink-0 lg:grid-cols-1 lg:self-start lg:rounded-3xl"
+        className={`floating-nav absolute inset-x-3 bottom-[max(calc(env(safe-area-inset-bottom)_-_0.5rem),0.5rem)] z-50 grid-cols-4 rounded-full p-1.5 lg:static lg:order-first lg:m-6 lg:mr-0 lg:mt-10 lg:w-60 lg:shrink-0 lg:grid-cols-1 lg:self-start lg:rounded-3xl ${formPage ? 'hidden lg:grid' : 'grid'}`}
       >
         {NAV.map(([label, icon]) => {
           const active =
@@ -290,7 +302,7 @@ export default function App() {
               type="button"
               onClick={() => go(label)}
               aria-current={active ? 'page' : undefined}
-              className={`flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-full border-0 text-[10px] font-semibold outline-none lg:flex-row lg:justify-start lg:gap-3 lg:px-5 lg:text-sm ${
+              className={`flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-full border-0 text-[10px] font-semibold outline-none lg:flex-row lg:justify-start lg:gap-3 lg:px-5 lg:text-sm ${
                 active ? 'bg-paper/15 text-gold' : 'bg-transparent text-paper'
               }`}
             >

@@ -85,7 +85,7 @@ export default function ReportButton({ targetType, targetId }) {
           maxLength={300}
           rows={3}
           onChange={(e) => setDetails(e.target.value)}
-          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-[15px] text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
+          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-base text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
         />
         <p className="m-0 px-1 text-right text-xs text-navy-soft">{details.length}/300</p>
       </div>

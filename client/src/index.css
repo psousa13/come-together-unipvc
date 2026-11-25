@@ -97,7 +97,7 @@ html, body {
 }
 
 .app-content {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 7rem);
+  padding-bottom: calc(max(env(safe-area-inset-bottom) - 0.5rem, 0.5rem) + 5rem);
   overscroll-behavior-y: contain;
 }
 .floating-nav {
@@ -107,7 +107,8 @@ html, body {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
-.floating-nav button { min-height: 3.25rem; letter-spacing: 0.015em; }
+.floating-nav button { min-height: 3rem; letter-spacing: 0.015em; }
+input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-date-and-time-value { margin: 0; text-align: left; }
 .floating-nav button:focus-visible { outline-color: var(--color-gold); outline-offset: -2px; }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
