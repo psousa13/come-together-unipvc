@@ -32,6 +32,20 @@ Princípio de produto: descoberta primeiro (mapa, filtros, avisos), parte social
 5. Notificações em tempo real, configuráveis (77% receia excesso de notificações) e lembretes antes do evento.
 6. Registo apenas com email institucional, sem anúncios.
 
+## Identidade visual
+
+A identidade visual do Come Together: UNIPVC inspira-se na cidade e na tradição de Viana do Castelo, procurando estabelecer uma ligação entre a aplicação e a identidade cultural da região.
+
+A paleta cromática tem três referências principais:
+
+1. **Azuis:** Representam o mar e a ligação histórica e geográfica de Viana do Castelo ao Atlântico.
+2. **Vermelho:** Inspirado nos tons característicos dos trajes tradicionais de Viana do Castelo.
+3. **Dourado:** Remete para os bordados, adornos e ourivesaria tradicionais associados à cultura minhota.
+
+Os tons areia complementam a paleta, proporcionando equilíbrio e luminosidade à interface.
+
+Desta forma, a aplicação procura combinar uma identidade visual contemporânea com elementos representativos do património cultural e geográfico da região.
+
 ## Funcionalidades implementadas
 
 1. Registo e início de sessão com email institucional: código de 6 dígitos por email e sessão com JWT de 7 dias. Existe uma conta de administração.
