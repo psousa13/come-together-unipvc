@@ -83,7 +83,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-[640px] px-5 pb-10 pt-[max(env(safe-area-inset-top),2rem)]">
+    <div className="mx-auto min-h-dvh max-w-[640px] px-5 pb-10 pt-[calc(env(safe-area-inset-top)+2rem)]">
       <header className="flex items-end gap-3 pb-4">
         <div className="min-w-0 flex-1">
           <h1 className="m-0 font-display text-[30px] font-bold leading-none">Administração</h1>
