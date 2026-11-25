@@ -11,7 +11,7 @@ const ITEMS = [
   {
     k: 'reminders',
     label: 'Lembretes de eventos',
-    hint: 'Avisos antes dos eventos a que vais. Disponível em breve.',
+    hint: 'Aviso cerca de 1 hora antes dos eventos a que vais.',
   },
 ];
 

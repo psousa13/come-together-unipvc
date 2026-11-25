@@ -12,6 +12,7 @@ function toJson(n) {
     actorName: n.actorName,
     eventId: String(n.event),
     eventTitle: n.eventTitle,
+    eventStartsAt: n.eventStartsAt || null,
   };
 }
 

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { SCHOOLS } = require('../constants');
 const { notifyGoing } = require('../notify');
+const { canManageEvent } = require('../permissions');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -250,8 +251,8 @@ router.post(
       .select('organizer')
       .lean();
     if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
-    const isOrganizer = String(e.organizer) === String(me._id);
-    if (!isOrganizer && me.role !== 'admin') {
+    const allowed = canManageEvent(me, e);
+    if (!allowed) {
       return res.status(403).json({ error: 'Só o organizador pode cancelar o evento.' });
     }
     await Event.updateOne({ _id: e._id }, { cancelled: true });

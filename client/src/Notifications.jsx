@@ -9,7 +9,7 @@ export default function Notifications({ list, fresh, onOpen }) {
       <Notice
         icon="bell"
         title="Sem notificações"
-        text="Quando alguém marcar «Eu vou» num evento teu, aparece aqui."
+        text="Aqui aparecem os avisos de quem vai aos teus eventos e os lembretes dos eventos a que vais."
       />
     );
   }
@@ -17,6 +17,7 @@ export default function Notifications({ list, fresh, onOpen }) {
     <ul className="m-0 list-none space-y-2 p-0">
       {list.map((n) => {
         const isNew = fresh.includes(n.id);
+        const reminder = n.type === 'reminder';
         return (
           <li key={n.id}>
             <button
@@ -27,14 +28,24 @@ export default function Notifications({ list, fresh, onOpen }) {
               }`}
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy text-paper">
-                <Icon name="user" size={18} />
+                <Icon name={reminder ? 'bell' : 'user'} size={18} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">
-                  <strong>{n.actorName}</strong> vai ao teu evento «{n.eventTitle}»
+                  {reminder ? (
+                    <>
+                      O evento «{n.eventTitle}» começa em breve
+                    </>
+                  ) : (
+                    <>
+                      <strong>{n.actorName}</strong> vai ao teu evento «{n.eventTitle}»
+                    </>
+                  )}
                 </span>
                 <span className="mt-1 block text-xs text-navy-soft">
-                  {new Date(n.createdAt).toLocaleString('pt-PT', FMT)}
+                  {reminder && n.eventStartsAt
+                    ? `Começa a ${new Date(n.eventStartsAt).toLocaleString('pt-PT', FMT)}`
+                    : new Date(n.createdAt).toLocaleString('pt-PT', FMT)}
                 </span>
               </span>
               {isNew && <span role="img" aria-label="Nova" className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-ruby" />}

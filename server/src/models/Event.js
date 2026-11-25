@@ -29,6 +29,7 @@ const eventSchema = new mongoose.Schema(
     },
     ticketUrl: { type: String, trim: true, maxlength: 300, default: '' },
     cancelled: { type: Boolean, default: false },
+    remindersSentAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
