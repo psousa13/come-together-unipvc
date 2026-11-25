@@ -5,7 +5,7 @@ import Avatar from './Avatar.jsx';
 import Dropdown from './Dropdown.jsx';
 import Icon from './Icon.jsx';
 import { resizeImage } from './image.js';
-import { SCHOOLS, SCHOOL_NAMES } from './schools.js';
+import { COURSES, MEMBER_TYPES, SCHOOLS, SCHOOL_NAMES } from './schools.js';
 import { field, label, primary } from './ui.js';
 
 const SCHOOL_OPTIONS = [
@@ -16,18 +16,22 @@ const SCHOOL_OPTIONS = [
 const secondary =
   'flex h-13 w-full items-center justify-center rounded-full border border-navy/20 bg-paper text-[15px] font-bold text-navy transition active:scale-[0.97]';
 
-export default function ProfileForm({ mode, onDone, onCancel }) {
-  const { user, getToken, updateUser, logout } = useAuth();
-  const onboarding = mode === 'onboarding';
+export default function ProfileForm({ onDone, onCancel }) {
+  const { user, getToken, updateUser } = useAuth();
   const [displayName, setDisplayName] = useState(user.displayName || '');
   const [username, setUsername] = useState(user.username || '');
+  const [memberType, setMemberType] = useState(user.memberType || '');
   const [school, setSchool] = useState(user.school || '');
+  const [course, setCourse] = useState(user.course || '');
   const [bio, setBio] = useState(user.bio || '');
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [error, setError] = useState('');
   const [hint, setHint] = useState({ text: '', tone: '' });
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
+
+  const base = memberType !== 'Staff' ? COURSES[school] : undefined;
+  const courses = base && course && !base.includes(course) ? [course, ...base] : base;
 
   async function checkUsername() {
     const value = username.trim().toLowerCase();
@@ -69,7 +73,15 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
       const data = await api('/users/me', {
         method: 'PATCH',
         token: getToken(),
-        body: { displayName, username, school, bio, avatar },
+        body: {
+          displayName: displayName.trim(),
+          username,
+          school,
+          memberType,
+          course: courses ? course : '',
+          bio,
+          avatar,
+        },
       });
       updateUser(data.user);
       onDone?.(data.user.username);
@@ -84,7 +96,6 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
 
   return (
     <form onSubmit={submit} className="space-y-5 pb-4">
-      {onboarding && <h1 className="m-0 font-display text-[30px] font-bold leading-tight">Completa o teu perfil</h1>}
       <div>
         <p className={`${label} mb-1.5`}>Foto</p>
         <div className="flex items-center gap-3">
@@ -148,16 +159,53 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
       </div>
 
       <div className="space-y-1.5">
+        <p className={label}>Sou</p>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tipo de membro">
+          {MEMBER_TYPES.map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="radio"
+              aria-checked={memberType === r}
+              onClick={() => setMemberType(r)}
+              className={`h-11 rounded-full text-sm font-bold ${
+                memberType === r ? 'border-0 bg-navy text-paper' : 'border border-navy/20 bg-paper text-navy'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
         <label htmlFor="pf-school" className={label}>Escola</label>
         <Dropdown
           id="pf-school"
           label="Escola"
           value={school}
-          onChange={setSchool}
+          onChange={(v) => {
+            setSchool(v);
+            setCourse('');
+          }}
           options={SCHOOL_OPTIONS}
           placeholder="Escolhe a tua escola"
         />
       </div>
+
+      {courses && (
+        <div className="space-y-1.5">
+          <label htmlFor="pf-course" className={label}>Curso na {school}</label>
+          <Dropdown
+            id="pf-course"
+            label={`Curso na ${school}`}
+            value={course}
+            onChange={setCourse}
+            options={[{ value: '', label: 'Prefiro não indicar' }, ...courses.map((c) => ({ value: c, label: c }))]}
+            placeholder="Escolhe o teu curso (opcional)"
+          />
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label htmlFor="pf-bio" className={label}>Bio</label>
@@ -183,15 +231,9 @@ export default function ProfileForm({ mode, onDone, onCancel }) {
         <button type="submit" disabled={busy} className={primary}>
           {busy ? 'A guardar…' : 'Guardar'}
         </button>
-        {onboarding ? (
-          <button type="button" onClick={logout} className={secondary}>
-            Sair
-          </button>
-        ) : (
-          <button type="button" onClick={onCancel} className={secondary}>
-            Cancelar
-          </button>
-        )}
+        <button type="button" onClick={onCancel} className={secondary}>
+          Cancelar
+        </button>
       </div>
     </form>
   );
