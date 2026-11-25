@@ -88,7 +88,7 @@ export default function CreateEvent({ onDone }) {
           rows={4}
           onChange={set('description')}
           placeholder="O que vai acontecer? O que devem levar?"
-          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-[15px] text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
+          className="w-full resize-none rounded-2xl border border-line bg-sand/60 px-4 py-3 text-base text-navy outline-none placeholder:text-navy-soft focus:border-coral focus:bg-white"
         />
       </div>
       <div className="space-y-1.5">
@@ -113,18 +113,18 @@ export default function CreateEvent({ onDone }) {
           className={field}
         />
       </div>
-      <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>:first-child]:col-span-2">
         <div className="space-y-1.5">
           <label htmlFor="ce-date" className={label}>Data</label>
-          <input id="ce-date" type="date" value={f.date} onChange={set('date')} className={field} />
+          <input id="ce-date" type="date" value={f.date} onChange={set('date')} className={`${field} block min-w-0 appearance-none`} />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="ce-start" className={label}>Início</label>
-          <input id="ce-start" type="time" value={f.start} onChange={set('start')} className={field} />
+          <input id="ce-start" type="time" value={f.start} onChange={set('start')} className={`${field} block min-w-0 appearance-none`} />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="ce-end" className={label}>Fim</label>
-          <input id="ce-end" type="time" value={f.end} onChange={set('end')} className={field} />
+          <input id="ce-end" type="time" value={f.end} onChange={set('end')} className={`${field} block min-w-0 appearance-none`} />
         </div>
       </div>
       <div className="space-y-1.5">
