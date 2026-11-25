@@ -125,7 +125,7 @@ export default function Profile({ username, onOpen, onFind }) {
 
       {error && <p className="text-center text-sm text-ruby">{error}</p>}
 
-      {!profile.isMe && <ReportButton targetType="user" targetId={profile.username} />}
+      
 
       {list && (
         <ul className="m-0 list-none space-y-2 p-0">
@@ -155,6 +155,7 @@ export default function Profile({ username, onOpen, onFind }) {
           ))}
         </ul>
       )}
+      {!profile.isMe && <ReportButton targetType="user" targetId={profile.username} />}
     </section>
   );
 }

@@ -12,6 +12,7 @@ import EventPage from './EventPage.jsx';
 import CreateEvent from './CreateEvent.jsx';
 import Notifications from './Notifications.jsx';
 import Admin from './Admin.jsx';
+import PullToRefresh from './PullToRefresh.jsx';
 import { useNotifications } from './useNotifications.js';
 
 const NAV = [
@@ -49,7 +50,7 @@ function Soon({ icon, text }) {
 function Header({ tab, user, unread, onBell, onSettings, onCreate }) {
   const head = HEAD[tab];
   return (
-    <header className="flex items-end gap-3 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:h-32 lg:px-8 lg:pt-0">
+    <header className="flex items-end gap-3 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+2rem)] lg:h-32 lg:px-8 lg:pt-0">
       <div className="min-w-0 flex-1">
         <h1 className="m-0 truncate font-display text-[30px] font-bold leading-none">
           {head.title}
@@ -102,7 +103,7 @@ function Header({ tab, user, unread, onBell, onSettings, onCreate }) {
 
 function BackBar({ onBack, title }) {
   return (
-    <div className="flex items-center gap-2 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:px-8 lg:pt-10">
+    <div className="flex items-center gap-2 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+2rem)] lg:px-8 lg:pt-10">
       <button
         type="button"
         onClick={onBack}
@@ -229,7 +230,7 @@ export default function App() {
       <>
         <BackBar onBack={back} title="Evento" />
         <div className="px-5 lg:px-8">
-          <EventPage key={page.id} id={page.id} />
+          <EventPage key={`${page.id}-${n}`} id={page.id} />
         </div>
       </>
     );
@@ -263,7 +264,7 @@ export default function App() {
             />
           </div>
         ) : tab === 'Eventos' ? (
-          <Events onOpen={openEvent} />
+          <Events onOpen={openEvent} reload={n} />
         ) : (
           <Soon {...SOON[tab]} />
         )}
@@ -274,9 +275,10 @@ export default function App() {
   const eventPage = page?.t === 'event' || page?.t === 'create';
   const profilePage = PROFILE_PAGES.includes(page?.t);
   const formPage = page?.t === 'create' || page?.t === 'edit';
+  const canRefresh = page ? page.t === 'event' || page.t === 'user' : tab === 'Eventos' || tab === 'Perfil';
 
   return (
-    <div className="relative mx-auto flex h-dvh max-w-[480px] flex-col lg:max-w-[1280px] lg:flex-row">
+    <div className="app-shell relative mx-auto flex h-dvh max-w-[480px] flex-col lg:max-w-[1280px] lg:flex-row">
       <div
         ref={scroller}
         className="app-content no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:mx-auto lg:max-w-[920px]"
@@ -288,6 +290,12 @@ export default function App() {
           {content}
         </div>
       </div>
+      <PullToRefresh
+        key={`${tab}-${stack.length}`}
+        scrollRef={scroller}
+        enabled={canRefresh}
+        onRefresh={setN}
+      />
       <nav
         aria-label="Navegação principal"
         className={`floating-nav absolute inset-x-3 bottom-[max(calc(env(safe-area-inset-bottom)_-_0.5rem),0.5rem)] z-50 grid-cols-4 rounded-full p-1.5 lg:static lg:order-first lg:m-6 lg:mr-0 lg:mt-10 lg:w-60 lg:shrink-0 lg:grid-cols-1 lg:self-start lg:rounded-3xl ${formPage ? 'hidden lg:grid' : 'grid'}`}

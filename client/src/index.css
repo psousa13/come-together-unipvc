@@ -98,7 +98,7 @@ html, body {
 
 .app-content {
   padding-bottom: calc(max(env(safe-area-inset-bottom) - 0.5rem, 0.5rem) + 5rem);
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
 }
 .floating-nav {
   background: var(--glass-nav-tint);
@@ -108,7 +108,20 @@ html, body {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .floating-nav button { min-height: 3rem; letter-spacing: 0.015em; }
-input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-date-and-time-value { margin: 0; text-align: left; }
+html:has(.app-shell), html:has(.app-shell) body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+input[type='date'], input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 0.75rem;
+  text-align: center;
+}
+input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-date-and-time-value { margin: 0; text-align: center; }
+input[type='date']::-webkit-datetime-edit, input[type='time']::-webkit-datetime-edit { flex: 1; padding: 0; text-align: center; }
+input[type='date']::-webkit-datetime-edit-fields-wrapper, input[type='time']::-webkit-datetime-edit-fields-wrapper { display: flex; justify-content: center; padding: 0; }
 .floating-nav button:focus-visible { outline-color: var(--color-gold); outline-offset: -2px; }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

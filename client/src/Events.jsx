@@ -85,7 +85,7 @@ function SkeletonCard() {
   );
 }
 
-export default function Events({ onOpen }) {
+export default function Events({ onOpen, reload }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
   const [view, setView] = useState('next');
@@ -110,7 +110,7 @@ export default function Events({ onOpen }) {
     return () => {
       live = false;
     };
-  }, [key, token, retry]);
+  }, [key, token, retry, reload]);
 
   const loading = res.key !== key;
   const filtered = view !== 'next' || school !== '' || term.trim().length >= 2;
