@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react';
 import { Access, Setup } from './Access.jsx';
 import { useAuth } from './useAuth.js';
-import { api } from './api.js';
-import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
-import Notice from './Notice.jsx';
+import UserSearch from './UserSearch.jsx';
 import Profile from './Profile.jsx';
 import ProfileForm from './ProfileForm.jsx';
 import Settings from './Settings.jsx';
@@ -13,6 +11,7 @@ import Events from './Events.jsx';
 import EventPage from './EventPage.jsx';
 import CreateEvent from './CreateEvent.jsx';
 import Notifications from './Notifications.jsx';
+import Admin from './Admin.jsx';
 import { useNotifications } from './useNotifications.js';
 
 const NAV = [
@@ -43,60 +42,6 @@ function Soon({ icon, text }) {
       </span>
       <h2 className="m-0 font-display text-xl font-bold">Em breve</h2>
       <p className="m-0 max-w-xs text-sm text-navy-soft">{text}</p>
-    </div>
-  );
-}
-
-function UserSearch({ onOpen }) {
-  const { getToken } = useAuth();
-  const [q, setQ] = useState('');
-  const [users, setUsers] = useState([]);
-  const [done, setDone] = useState(false);
-
-  async function change(e) {
-    const value = e.target.value;
-    setQ(value);
-    setDone(false);
-    if (value.trim().length < 2) {
-      setUsers([]);
-      return;
-    }
-    try {
-      const data = await api(`/users?q=${encodeURIComponent(value.trim())}`, { token: getToken() });
-      setUsers(data.users);
-      setDone(true);
-    } catch {
-      setUsers([]);
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <input
-        value={q}
-        onChange={change}
-        placeholder="Procurar pessoas"
-        aria-label="Procurar pessoas"
-        className="w-full rounded-full border border-line bg-paper px-5 py-3 outline-none"
-      />
-      {done && users.length === 0 && (
-        <Notice icon="search" title="Ninguém encontrado" text="Experimenta outro nome ou username." />
-      )}
-      <ul className="m-0 list-none space-y-2 p-0">
-        {users.map((u) => (
-          <li key={u.id}>
-            <button
-              type="button"
-              onClick={() => onOpen(u.username)}
-              className="flex w-full items-center gap-3 rounded-3xl bg-paper p-3 text-left"
-            >
-              <Avatar user={u} size={40} />
-              <span className="font-bold">{u.displayName}</span>
-              <span className="text-sm text-navy-soft">@{u.username}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -162,7 +107,7 @@ function BackBar({ onBack, title }) {
 }
 
 export default function App() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const [tab, setTab] = useState('Início');
   const [stack, setStack] = useState([]);
   const [n, setN] = useState(0);
@@ -172,17 +117,7 @@ export default function App() {
 
   if (loading) return null;
   if (!user) return <Access />;
-  if (user.role === 'admin') {
-    return (
-      <div className="grid min-h-dvh place-items-center px-5">
-        <main className="card">
-          <h1>Olá, {user.displayName}</h1>
-          <p className="muted">Administração</p>
-          <button onClick={logout}>Terminar sessão</button>
-        </main>
-      </div>
-    );
-  }
+  if (user.role === 'admin') return <Admin />;
   if (!user.username) return <Setup />;
 
   const page = stack[stack.length - 1] ?? null;
@@ -222,7 +157,7 @@ export default function App() {
       <>
         <BackBar onBack={back} title="Editar perfil" />
         <div className="px-5 lg:px-8">
-          <ProfileForm mode="edit" onDone={() => back()} onCancel={back} />
+          <ProfileForm onDone={() => back()} onCancel={back} />
         </div>
       </>
     );

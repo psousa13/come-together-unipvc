@@ -8,6 +8,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const http = require('http');
 const { initRealtime } = require('./realtime');
+const { startReminders } = require('./reminders');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -19,6 +20,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/reports', require('./routes/reports'));
 
 const server = http.createServer(app);
 initRealtime(server);
@@ -29,6 +31,7 @@ mongoose
   .then(() => {
     console.log('MongoDB connected');
     server.listen(PORT, () => console.log(`API on port ${PORT}`));
+    startReminders();
   })
   .catch((err) => {
     console.error(err);

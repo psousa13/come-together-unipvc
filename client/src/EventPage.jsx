@@ -4,6 +4,7 @@ import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
+import ReportButton from './ReportButton.jsx';
 import { goingText, whenLong } from './format.js';
 
 function Fact({ icon, label, children }) {
@@ -191,6 +192,7 @@ export default function EventPage({ id }) {
             Cancelar evento
           </button>
         ))}
+      {!e.isMine && <ReportButton targetType="event" targetId={id} />}
       {msg && (
         <p role="alert" className="m-0 text-center text-sm text-ruby">
           {msg}

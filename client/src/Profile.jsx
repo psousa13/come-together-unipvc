@@ -4,6 +4,7 @@ import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
+import ReportButton from './ReportButton.jsx';
 
 function ProfileSkeleton() {
   return (
@@ -123,6 +124,8 @@ export default function Profile({ username, onOpen, onFind }) {
       </div>
 
       {error && <p className="text-center text-sm text-ruby">{error}</p>}
+
+      {!profile.isMe && <ReportButton targetType="user" targetId={profile.username} />}
 
       {list && (
         <ul className="m-0 list-none space-y-2 p-0">
