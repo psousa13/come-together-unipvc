@@ -21,6 +21,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/communities', require('./routes/communities'));
 
 const server = http.createServer(app);
 initRealtime(server);
