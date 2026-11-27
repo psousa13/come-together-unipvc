@@ -5,7 +5,7 @@ import Dropdown from './Dropdown.jsx';
 import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
 import { SCHOOLS } from './schools.js';
-import { goingText, whenShort } from './format.js';
+import EventRow from './EventRow.jsx';
 import { field } from './ui.js';
 
 const VIEWS = [
@@ -25,51 +25,6 @@ function queryOf(view, school, q) {
   if (school) p.set('school', school);
   if (q.trim().length >= 2) p.set('q', q.trim());
   return p.toString();
-}
-
-function dayParts(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return {
-    day: d.toLocaleDateString('pt-PT', { day: 'numeric' }),
-    month: d.toLocaleDateString('pt-PT', { month: 'short' }).replace('.', ''),
-  };
-}
-
-function Card({ e, onOpen }) {
-  const d = dayParts(e.startsAt);
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(e.id)}
-      className="lift flex w-full gap-3 rounded-3xl bg-paper p-3 text-left shadow-sm"
-    >
-      {d && (
-        <div
-          aria-hidden="true"
-          className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-navy text-paper"
-        >
-          <span className="font-display text-2xl font-bold leading-none">{d.day}</span>
-          <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-gold">{d.month}</span>
-        </div>
-      )}
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-          <span className="rounded-full bg-sand px-2.5 py-1">{e.school}</span>
-          {e.origin === 'official' && <span className="rounded-full bg-navy px-2.5 py-1 text-paper">UniPVC</span>}
-          {e.isGoing && (
-            <span className="ml-auto flex items-center gap-1 text-coral-deep">
-              <Icon name="check" size={12} /> Eu vou
-            </span>
-          )}
-        </div>
-        <h3 className="m-0 break-words font-display text-lg font-bold leading-tight">{e.title}</h3>
-        <p className="m-0 text-sm font-semibold">{whenShort(e.startsAt)}</p>
-        {e.location?.name && <p className="m-0 break-words text-sm text-navy-soft">{e.location.name}</p>}
-        <p className="m-0 text-xs text-navy-soft">{goingText(e.attendeesCount)}</p>
-      </div>
-    </button>
-  );
 }
 
 function SkeletonCard() {
@@ -205,7 +160,7 @@ export default function Events({ onOpen, reload }) {
         {!loading &&
           res.events.map((e) => (
             <li key={e.id}>
-              <Card e={e} onOpen={onOpen} />
+              <EventRow e={e} onOpen={onOpen} />
             </li>
           ))}
       </ul>
