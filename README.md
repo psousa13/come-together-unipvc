@@ -34,15 +34,16 @@ Princípio de produto: descoberta primeiro (mapa, filtros, avisos), parte social
 
 ## O Significado por detrás do nome
 
-The name **Come Together** takes inspiration from the Beatles song of the same name, released in 1969.
+O nome **Come Together** é inspirado na música homónima dos **The Beatles**, lançada em 1969.
 
-Beyond the musical reference, the name reflects the central idea behind the project: bringing people together.
+Mais do que uma referência musical, o nome representa a ideia central do projeto: aproximar pessoas.
 
-In the context of UniPVC, this means connecting students from different schools, campuses and backgrounds through shared interests, communities and experiences.
+No contexto do IPVC, isso significa ligar estudantes de diferentes escolas, polos e áreas de estudo, criando oportunidades para descobrir interesses em comum, participar em comunidades e partilhar experiências.
 
-Just as the name suggests, the application aims to make the institution feel less fragmented, encouraging interaction and a stronger sense of belonging across its different academic communities.
+A aplicação procura tornar uma instituição geograficamente dispersa num espaço mais conectado, onde a distância entre escolas não seja uma barreira à interação e ao sentimento de pertença.
 
-**Come Together is not just about discovering what's happening. It's about bringing the people who make it happen closer together.**
+**Come Together não é apenas sobre descobrir o que acontece. É sobre aproximar as pessoas que fazem acontecer.**
+
 
 ## Identidade visual
 
