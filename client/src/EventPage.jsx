@@ -5,6 +5,8 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
 import ReportButton from './ReportButton.jsx';
+import PhotoGallery from './PhotoGallery.jsx';
+import PhotoManager from './PhotoManager.jsx';
 import { goingText, whenLong } from './format.js';
 
 function Fact({ icon, label, children }) {
@@ -45,13 +47,29 @@ function EventSkeleton() {
 const btn =
   'flex h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold transition active:scale-[0.98] disabled:opacity-40';
 
-export default function EventPage({ id }) {
+function BackButton({ onBack }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      aria-label="Voltar"
+      className="hit grid h-10 w-10 place-items-center rounded-full bg-paper text-navy shadow-sm transition active:scale-90"
+    >
+      <Icon name="back" size={22} />
+    </button>
+  );
+}
+
+const topPad = 'pt-[calc(env(safe-area-inset-top)+2rem)] lg:pt-10';
+
+export default function EventPage({ id, onBack, onUser }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
   const [res, setRes] = useState({ id: null, event: null, error: '' });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [managing, setManaging] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -63,17 +81,25 @@ export default function EventPage({ id }) {
     };
   }, [id, token]);
 
-  if (res.id !== id) return <EventSkeleton />;
+  const plain = (child) => (
+    <div className={`space-y-4 px-5 lg:px-8 ${topPad}`}>
+      <BackButton onBack={onBack} />
+      {child}
+    </div>
+  );
+
+  if (res.id !== id) return plain(<EventSkeleton />);
 
   if (res.error || !res.event) {
-    return (
+    return plain(
       <Notice danger icon="info" title="Evento indisponível" text={res.error || 'Evento não encontrado.'} />
     );
   }
 
   const e = res.event;
   const people = e.attendeesPreview || [];
-  const organizer = e.origin === 'official' ? 'UniPVC' : e.organizer?.displayName;
+  const photos = e.photos || [];
+  const canEdit = e.isMine && !e.cancelled;
 
   async function toggleGoing() {
     setBusy(true);
@@ -102,16 +128,36 @@ export default function EventPage({ id }) {
   }
 
   return (
-    <main className="space-y-4 pb-4">
+    <main className="pb-4">
+      <div className={`space-y-4 px-5 lg:px-8 ${topPad}`}>
+      <BackButton onBack={onBack} />
       <div>
-        <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+        {e.origin === 'official' ? (
+          <span className="mb-3 inline-flex items-center rounded-lg border border-navy/20 bg-paper px-2.5 py-1.5 text-xs font-semibold">
+            Organizado pela UniPVC
+          </span>
+        ) : (
+          e.organizer?.displayName && (
+            <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-full bg-paper px-3 py-1.5 shadow-sm">
+              <span className="shrink-0 text-xs text-navy-soft">Organizado por</span>
+              <button
+                type="button"
+                disabled={!e.organizer.username}
+                onClick={() => onUser(e.organizer.username)}
+                className="hit flex min-w-0 items-center gap-2 text-xs font-semibold"
+              >
+                <Avatar user={e.organizer} size={22} />
+                <span className="truncate">{e.organizer.displayName}</span>
+              </button>
+            </div>
+          )
+        )}
+        <h1 className="m-0 break-words font-display text-[32px] font-bold leading-[1.05]">{e.title}</h1>
+        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
           <span className="rounded-full bg-paper px-2.5 py-1">{e.school}</span>
-          {e.origin === 'official' && <span className="rounded-full bg-navy px-2.5 py-1 text-paper">Oficial</span>}
           {e.cancelled && <span className="rounded-full bg-ruby px-2.5 py-1 text-white">Cancelado</span>}
           {!e.cancelled && e.ended && <span className="rounded-full bg-sand-deep px-2.5 py-1">Terminou</span>}
         </div>
-        <h1 className="m-0 font-display text-[32px] font-bold leading-[1.05]">{e.title}</h1>
-        {organizer && <p className="mt-2 text-sm text-navy-soft">Organizado por {organizer}</p>}
       </div>
       <div className="grid gap-2">
         <Fact icon="cal" label="Quando">{whenLong(e.startsAt, e.endsAt)}</Fact>
@@ -120,7 +166,7 @@ export default function EventPage({ id }) {
           {people.length > 0 ? (
             <div className="flex shrink-0 -space-x-3 pl-1">
               {people.slice(0, 5).map((a, i) => (
-                <Avatar key={a.username || a.id || i} user={a} size={36} />
+                <Avatar key={a.username || a.id || i} user={a} size={40} ring />
               ))}
             </div>
           ) : (
@@ -131,11 +177,36 @@ export default function EventPage({ id }) {
           <p className="m-0 text-sm">{goingText(e.attendeesCount)}</p>
         </div>
       </div>
-      {e.description && (
-        <section>
-          <h2 className="m-0 font-display text-xl font-bold">Sobre o evento</h2>
-          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-navy-soft">{e.description}</p>
+      {(e.description || photos.length > 0 || canEdit) && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="m-0 font-display text-xl font-bold">Sobre o evento</h2>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setManaging(true)}
+                className="hit flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-paper px-3.5 text-xs font-bold text-navy shadow-sm"
+              >
+                <Icon name={photos.length ? 'edit' : 'plus'} size={14} />
+                {photos.length ? 'Gerir fotos' : 'Adicionar fotos'}
+              </button>
+            )}
+          </div>
+          {e.description && (
+            <p className="m-0 whitespace-pre-line break-words text-sm leading-relaxed text-navy-soft">{e.description}</p>
+          )}
+          <PhotoGallery photos={photos} coverId={e.coverPhoto} title={e.title} />
         </section>
+      )}
+      {managing && (
+        <PhotoManager
+          eventId={id}
+          photos={photos}
+          coverId={e.coverPhoto}
+          token={token}
+          onChange={(d) => setRes((r) => ({ ...r, event: { ...r.event, ...d } }))}
+          onClose={() => setManaging(false)}
+        />
       )}
       {e.ticketUrl && (
         <a
@@ -198,6 +269,7 @@ export default function EventPage({ id }) {
           {msg}
         </p>
       )}
+      </div>
     </main>
   );
 }

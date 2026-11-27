@@ -11,6 +11,10 @@ router.use(requireAuth);
 
 const ID_RE = /^[a-f\d]{24}$/i;
 const URL_RE = /^https?:\/\/\S+$/i;
+const IMAGE_RE = /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/]+={0,2}$/i;
+const PHOTO_MAX = 400000;
+const THUMB_MAX = 60000;
+const PHOTOS_LIMIT = 5;
 
 const wrap = (fn) => (req, res) =>
   fn(req, res).catch((err) => {
@@ -23,6 +27,13 @@ const wrap = (fn) => (req, res) =>
   });
 
 const bad = (res, error) => res.status(400).json({ error });
+
+const isImage = (value, max) => typeof value === 'string' && value.length <= max && IMAGE_RE.test(value);
+
+const photosJson = (e) => ({
+  photos: (e.photos || []).map((p) => ({ id: String(p._id), src: p.data })),
+  coverPhoto: e.coverPhoto ? String(e.coverPhoto) : null,
+});
 
 function parseDate(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -50,6 +61,7 @@ function toJson(e, me) {
       lng: e.location && e.location.lng != null ? e.location.lng : null,
     },
     ticketUrl: e.ticketUrl,
+    thumb: (e.coverPhoto && e.thumb) || '',
     origin: e.origin,
     isPrivate: e.isPrivate,
     cancelled: e.cancelled,
@@ -192,7 +204,7 @@ router.post(
     const event = await Event.findById(created._id)
       .populate('organizer', 'username displayName avatar')
       .lean();
-    res.status(201).json({ event: toJson(event, me) });
+    res.status(201).json({ event: { ...toJson(event, me), photos: [], coverPhoto: null } });
   })
 );
 
@@ -202,6 +214,7 @@ router.get(
     const me = req.user;
     if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'Evento não encontrado.' });
     const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+      .select('+photos')
       .populate('organizer', 'username displayName avatar')
       .lean();
     if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
@@ -213,7 +226,7 @@ router.get(
       .filter((p) => p.username)
       .map((p) => ({ username: p.username, displayName: p.displayName || '' }));
 
-    res.json({ event: { ...toJson(e, me), attendeesPreview } });
+    res.json({ event: { ...toJson(e, me), ...photosJson(e), attendeesPreview } });
   })
 );
 
@@ -257,6 +270,91 @@ router.post(
     }
     await Event.updateOne({ _id: e._id }, { cancelled: true });
     res.json({ cancelled: true });
+  })
+);
+
+async function findManaged(req, res) {
+  const me = req.user;
+  if (!ID_RE.test(req.params.id)) {
+    res.status(404).json({ error: 'Evento não encontrado.' });
+    return null;
+  }
+  const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+    .select('organizer')
+    .lean();
+  if (!e) {
+    res.status(404).json({ error: 'Evento não encontrado.' });
+    return null;
+  }
+  if (!canManageEvent(me, e)) {
+    res.status(403).json({ error: 'Só o organizador pode gerir as fotos.' });
+    return null;
+  }
+  return e;
+}
+
+const loadPhotos = (id) => Event.findById(id).select('+photos').lean();
+
+async function findPhoto(req, res) {
+  const managed = await findManaged(req, res);
+  if (!managed) return null;
+  const event = await loadPhotos(managed._id);
+  const photo = (event.photos || []).find((p) => String(p._id) === req.params.photoId);
+  if (!photo) {
+    res.status(404).json({ error: 'Foto não encontrada.' });
+    return null;
+  }
+  return { event, photo };
+}
+
+router.post(
+  '/:id/photos',
+  wrap(async (req, res) => {
+    const e = await findManaged(req, res);
+    if (!e) return;
+    const { data, thumb } = req.body || {};
+    if (!isImage(data, PHOTO_MAX) || !isImage(thumb, THUMB_MAX)) {
+      return bad(res, 'Foto inválida ou demasiado grande.');
+    }
+    const added = await Event.findOneAndUpdate(
+      { _id: e._id, [`photos.${PHOTOS_LIMIT - 1}`]: { $exists: false } },
+      { $push: { photos: { data, thumb } } },
+      { returnDocument: 'after', projection: { photos: 1 } }
+    ).lean();
+    if (!added) return bad(res, `Cada evento pode ter no máximo ${PHOTOS_LIMIT} fotos.`);
+    const last = added.photos[added.photos.length - 1];
+    await Event.updateOne({ _id: e._id, coverPhoto: null }, { coverPhoto: last._id, thumb });
+    res.status(201).json(photosJson(await loadPhotos(e._id)));
+  })
+);
+
+router.put(
+  '/:id/photos/:photoId/cover',
+  wrap(async (req, res) => {
+    const found = await findPhoto(req, res);
+    if (!found) return;
+    const { event, photo } = found;
+    await Event.updateOne(
+      { _id: event._id, 'photos._id': photo._id },
+      { coverPhoto: photo._id, thumb: photo.thumb }
+    );
+    res.json(photosJson(await loadPhotos(event._id)));
+  })
+);
+
+router.delete(
+  '/:id/photos/:photoId',
+  wrap(async (req, res) => {
+    const found = await findPhoto(req, res);
+    if (!found) return;
+    const { event, photo } = found;
+    await Event.updateOne({ _id: event._id }, { $pull: { photos: { _id: photo._id } } });
+    const next = event.photos.find((p) => String(p._id) !== String(photo._id));
+    await Event.updateOne(
+      { _id: event._id, coverPhoto: photo._id },
+      { coverPhoto: next ? next._id : null, thumb: next ? next.thumb : '' }
+    );
+    res.json(photosJson(await loadPhotos(event._id)));
   })
 );
 

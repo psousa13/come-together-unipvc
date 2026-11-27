@@ -228,10 +228,7 @@ export default function App() {
   } else if (page?.t === 'event') {
     content = (
       <>
-        <BackBar onBack={back} title="Evento" />
-        <div className="px-5 lg:px-8">
-          <EventPage key={`${page.id}-${n}`} id={page.id} />
-        </div>
+        <EventPage key={`${page.id}-${n}`} id={page.id} onBack={back} onUser={openUser} />
       </>
     );
   } else if (page?.t === 'create') {

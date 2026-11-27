@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PhotoPicker from './PhotoPicker.jsx';
 import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Dropdown from './Dropdown.jsx';
@@ -33,10 +34,31 @@ export default function CreateEvent({ onDone }) {
     end: '22:00',
     ticketUrl: '',
   });
+  const [photos, setPhotos] = useState([]);
+  const [coverKey, setCoverKey] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+  const [createdId, setCreatedId] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
+
+  const cover = photos.some((p) => p.key === coverKey) ? coverKey : photos[0]?.key;
+
+  async function uploadPhotos(id) {
+    let coverId = null;
+    for (const photo of photos) {
+      const d = await api(`/events/${id}/photos`, {
+        method: 'POST',
+        body: { data: photo.data, thumb: photo.thumb },
+        token,
+      });
+      if (photo.key === cover) coverId = d.photos[d.photos.length - 1].id;
+    }
+    if (coverId && cover !== photos[0].key) {
+      await api(`/events/${id}/photos/${coverId}/cover`, { method: 'PUT', token });
+    }
+  }
 
   async function submit(ev) {
     ev.preventDefault();
@@ -56,18 +78,39 @@ export default function CreateEvent({ onDone }) {
     };
     if (f.description.trim()) body.description = f.description.trim();
     if (f.ticketUrl.trim()) body.ticketUrl = f.ticketUrl.trim();
+    let id;
     try {
       const d = await api('/events', { method: 'POST', body, token });
-      onDone(d.event.id);
+      id = d.event.id;
     } catch (err) {
       setError(err.message);
       setBusy(false);
+      return;
+    }
+    try {
+      await uploadPhotos(id);
+      onDone(id);
+    } catch (err) {
+      setError(`O evento foi criado, mas houve um problema com as fotos: ${err.message}`);
+      setCreatedId(id);
     }
   }
 
   return (
     <form onSubmit={submit} className="space-y-5 pb-4">
       <p className="m-0 text-sm text-navy-soft">Fica publicado de imediato, sem aprovação.</p>
+      <div className="space-y-1.5">
+        <p className={`${label} mb-1.5`}>Fotos (opcional)</p>
+        <PhotoPicker
+          items={photos.map((p) => ({ key: p.key, src: p.data }))}
+          coverKey={cover}
+          disabled={busy}
+          onPreparing={setPreparing}
+          onAdd={(photo) => setPhotos((list) => [...list, { ...photo, key: `${Date.now()}-${Math.random()}` }])}
+          onRemove={(key) => setPhotos((list) => list.filter((p) => p.key !== key))}
+          onCover={setCoverKey}
+        />
+      </div>
       <div className="space-y-1.5">
         <label htmlFor="ce-title" className={label}>Nome</label>
         <input
@@ -145,9 +188,15 @@ export default function CreateEvent({ onDone }) {
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className={primary}>
-        {busy ? 'A publicar…' : 'Publicar evento'}
-      </button>
+      {createdId ? (
+        <button type="button" onClick={() => onDone(createdId)} className={primary}>
+          Abrir evento
+        </button>
+      ) : (
+        <button type="submit" disabled={busy || preparing} className={primary}>
+          {busy ? 'A publicar…' : 'Publicar evento'}
+        </button>
+      )}
     </form>
   );
 }

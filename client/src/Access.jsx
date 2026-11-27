@@ -27,13 +27,13 @@ function Mark({ size = 44 }) {
 
 function Screen({ step, onBack, footer, children }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[480px] lg:max-w-[640px] flex-col bg-sand pt-[calc(env(safe-area-inset-top)+2rem)]">
+    <div className="mx-auto flex min-h-dvh max-w-[480px] lg:max-w-[640px] flex-col bg-sand pt-[calc(env(safe-area-inset-top)+2rem)] lg:relative lg:top-12 lg:mb-24 lg:min-h-0 lg:rounded-[32px] lg:bg-paper lg:px-5 lg:pt-8 lg:shadow-floating">
       <div className="flex items-center gap-3 px-5">
         <button
           type="button"
           onClick={onBack}
           aria-label="Voltar"
-          className="grid h-11 w-11 place-items-center rounded-full bg-paper shadow-sm transition-transform duration-100 active:scale-90"
+          className="grid h-11 w-11 place-items-center rounded-full bg-paper shadow-sm transition-transform duration-100 active:scale-90 lg:bg-sand"
         >
           <Icon name="back" size={22} />
         </button>
@@ -52,7 +52,7 @@ function Screen({ step, onBack, footer, children }) {
       </div>
       <div className="mt-6 flex flex-1 flex-col px-5 pb-6">{children}</div>
       {footer && (
-        <div className="glass-bar sticky bottom-0 z-10 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3">
+        <div className="glass-bar sticky bottom-0 z-10 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 lg:static lg:pb-8">
           {footer}
         </div>
       )}
