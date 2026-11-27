@@ -37,9 +37,9 @@ export default function EventRow({ e, onOpen }) {
       className="flex cursor-pointer gap-3 rounded-3xl bg-paper p-2.5 pr-3 outline-none transition focus-visible:ring-2 focus-visible:ring-coral-deep"
     >
       {e.thumb ? (
-        <img src={e.thumb} alt="" className="h-[104px] w-[104px] shrink-0 rounded-2xl bg-sand-deep object-cover" />
+        <img src={e.thumb} alt="" className="h-[104px] w-[104px] shrink-0 rounded-2xl bg-sand-deep object-cover shadow-[0_6px_14px_-4px_rgba(10,25,60,0.35),0_1px_3px_rgba(10,25,60,0.2)]" />
       ) : (
-        <span className="grid h-[104px] w-[104px] shrink-0 place-items-center rounded-2xl bg-sand-deep text-navy-soft">
+        <span className="grid h-[104px] w-[104px] shrink-0 place-items-center rounded-2xl bg-sand-deep text-navy-soft shadow-[0_6px_14px_-4px_rgba(10,25,60,0.35),0_1px_3px_rgba(10,25,60,0.2)]">
           <Icon name="cal" size={28} />
         </span>
       )}
