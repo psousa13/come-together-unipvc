@@ -33,7 +33,7 @@ export default function PhotoGallery({ photos, coverId, title }) {
               type="button"
               onClick={() => setOpen(i)}
               aria-label={`Ver foto ${i + 1} de ${list.length}`}
-              className="absolute inset-0 overflow-hidden rounded-2xl border-0 bg-sand-deep p-0"
+              className="absolute inset-0 overflow-hidden rounded-2xl border-0 bg-sand-deep p-0 shadow-[0_14px_28px_-8px_rgba(10,25,60,0.45),0_3px_8px_rgba(10,25,60,0.2)]"
             >
               <img src={photo.src} alt="" className="block h-full w-full object-cover" />
             </button>
