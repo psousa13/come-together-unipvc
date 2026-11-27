@@ -6,6 +6,7 @@ import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
 import { SCHOOLS } from './schools.js';
 import EventRow from './EventRow.jsx';
+import { onEventChange } from './eventsBus.js';
 import { field } from './ui.js';
 
 const VIEWS = [
@@ -40,6 +41,13 @@ function SkeletonCard() {
   );
 }
 
+const cache = new Map();
+const NONE = new Set();
+
+function purge(id) {
+  cache.forEach((list, k) => cache.set(k, list.filter((x) => x.id !== id)));
+}
+
 export default function Events({ onOpen, reload }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
@@ -48,7 +56,9 @@ export default function Events({ onOpen, reload }) {
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   const [retry, setRetry] = useState(0);
-  const [res, setRes] = useState({ key: null, events: [], error: '' });
+  const [ping, setPing] = useState(0);
+  const [res, setRes] = useState({ key: null, events: [], error: '', enter: NONE });
+  const [leaving, setLeaving] = useState(NONE);
 
   useEffect(() => {
     const t = setTimeout(() => setTerm(q), 350);
@@ -60,15 +70,72 @@ export default function Events({ onOpen, reload }) {
   useEffect(() => {
     let live = true;
     api(`/events?${key}`, { token })
-      .then((d) => live && setRes({ key, events: d.events, error: '' }))
-      .catch((err) => live && setRes({ key, events: [], error: err.message }));
+      .then((d) => {
+        cache.set(`${token}|${key}`, d.events);
+        if (!live) return;
+        setRes((prev) => {
+          const known = prev.key === key && !prev.error ? new Set(prev.events.map((x) => x.id)) : null;
+          const enter = known ? new Set(d.events.filter((x) => !known.has(x.id)).map((x) => x.id)) : NONE;
+          return { key, events: d.events, error: '', enter };
+        });
+      })
+      .catch((err) => {
+        if (!live) return;
+        setRes((prev) =>
+          prev.key === key && prev.events.length > 0 ? prev : { key, events: [], error: err.message, enter: NONE }
+        );
+      });
     return () => {
       live = false;
     };
-  }, [key, token, retry, reload]);
+  }, [key, token, retry, reload, ping]);
 
-  const loading = res.key !== key;
+  useEffect(() => {
+    return onEventChange((m) => {
+      if (m.type === 'created') {
+        setPing((x) => x + 1);
+      } else if (m.type === 'cancelled') {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          purge(m.id);
+          setRes((r) => ({ ...r, events: r.events.filter((x) => x.id !== m.id) }));
+        } else {
+          setLeaving((s) => new Set(s).add(m.id));
+        }
+      } else if (m.type === 'going') {
+        const patch = (list) => list.map((x) => (x.id === m.id ? { ...x, isGoing: m.going } : x));
+        cache.forEach((list, k) => cache.set(k, patch(list)));
+        setRes((r) => ({ ...r, events: patch(r.events) }));
+        if (view === 'going') setPing((x) => x + 1);
+      }
+    });
+  }, [view]);
+
+  const fresh = res.key === key;
+  const cached = cache.get(`${token}|${key}`);
+  const events = fresh ? (res.error ? [] : res.events) : (cached ?? []);
+  const loading = !fresh && cached === undefined;
+  const error = fresh ? res.error : '';
+  const enter = fresh ? res.enter : NONE;
   const filtered = view !== 'next' || school !== '' || term.trim().length >= 2;
+
+  function remove(id) {
+    purge(id);
+    setRes((r) => ({ ...r, events: r.events.filter((x) => x.id !== id) }));
+    setLeaving((s) => {
+      const next = new Set(s);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  function settle(id) {
+    setRes((r) => {
+      if (!r.enter.has(id)) return r;
+      const enter = new Set(r.enter);
+      enter.delete(id);
+      return { ...r, enter };
+    });
+  }
 
   function clearFilters() {
     setView('next');
@@ -133,17 +200,17 @@ export default function Events({ onOpen, reload }) {
           <SkeletonCard />
         </div>
       )}
-      {!loading && res.error && (
+      {!loading && error && (
         <Notice
           danger
           icon="bell"
           title="Não foi possível carregar"
-          text={res.error}
+          text={error}
           action="Tentar de novo"
           onAction={tryAgain}
         />
       )}
-      {!loading && !res.error && res.events.length === 0 && (
+      {!loading && !error && events.length === 0 && (
         <Notice
           icon="cal"
           title={filtered ? 'Nada encontrado' : 'Ainda sem eventos'}
@@ -156,11 +223,20 @@ export default function Events({ onOpen, reload }) {
           onAction={clearFilters}
         />
       )}
-      <ul className="m-0 list-none space-y-2 p-0">
+      <ul className="m-0 list-none p-0">
         {!loading &&
-          res.events.map((e) => (
-            <li key={e.id}>
-              <EventRow e={e} onOpen={onOpen} />
+          events.map((e) => (
+            <li
+              key={e.id}
+              className={leaving.has(e.id) ? 'row-leave' : enter.has(e.id) ? 'row-enter' : undefined}
+              onAnimationEnd={(ev) => {
+                if (ev.animationName === 'row-shrink') remove(e.id);
+                else if (ev.animationName === 'row-grow') settle(e.id);
+              }}
+            >
+              <div className="pb-2">
+                <EventRow e={e} onOpen={onOpen} />
+              </div>
             </li>
           ))}
       </ul>

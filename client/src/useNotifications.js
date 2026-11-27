@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
 import { connectSocket } from './socket.js';
 import { useAuth } from './useAuth.js';
+import { emitEventChange } from './eventsBus.js';
 
 export function useNotifications(uid) {
   const { getToken } = useAuth();
@@ -28,7 +29,14 @@ export function useNotifications(uid) {
 
     socket.on('connect', () => {
       if (first) first = false;
-      else load();
+      else {
+        load();
+        emitEventChange({ type: 'created' });
+      }
+    });
+
+    socket.on('event:changed', (m) => {
+      emitEventChange({ type: m.type === 'cancelled' ? 'cancelled' : 'created', id: m.id });
     });
 
     socket.on('notification', (n) => {

@@ -29,4 +29,8 @@ function emitToUser(userId, event, payload) {
   if (io) io.to(`user:${userId}`).emit(event, payload);
 }
 
-module.exports = { initRealtime, emitToUser };
+function emitAll(event, payload) {
+  if (io) io.emit(event, payload);
+}
+
+module.exports = { initRealtime, emitToUser, emitAll };

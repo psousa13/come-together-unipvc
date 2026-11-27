@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const LIMIT = 80;
 const TRIGGER = 56;
@@ -6,6 +6,10 @@ const TRIGGER = 56;
 export default function PullToRefresh({ scrollRef, enabled, onRefresh }) {
   const [pull, setPull] = useState(0);
   const [busy, setBusy] = useState(false);
+  const cb = useRef(onRefresh);
+  useEffect(() => {
+    cb.current = onRefresh;
+  });
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -44,7 +48,7 @@ export default function PullToRefresh({ scrollRef, enabled, onRefresh }) {
       if (!go) return;
       working = true;
       setBusy(true);
-      onRefresh((x) => x + 1);
+      cb.current();
       timer = setTimeout(() => {
         working = false;
         setBusy(false);
@@ -62,7 +66,7 @@ export default function PullToRefresh({ scrollRef, enabled, onRefresh }) {
       el.removeEventListener('touchend', end);
       el.removeEventListener('touchcancel', reset);
     };
-  }, [scrollRef, enabled, onRefresh]);
+  }, [scrollRef, enabled]);
 
   if (!busy && pull === 0) return null;
 
