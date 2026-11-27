@@ -32,6 +32,18 @@ Princípio de produto: descoberta primeiro (mapa, filtros, avisos), parte social
 5. Notificações em tempo real, configuráveis (77% receia excesso de notificações) e lembretes antes do evento.
 6. Registo apenas com email institucional, sem anúncios.
 
+## O Significado por detrás do nome
+
+The name **Come Together** takes inspiration from the Beatles song of the same name, released in 1969.
+
+Beyond the musical reference, the name reflects the central idea behind the project: bringing people together.
+
+In the context of UniPVC, this means connecting students from different schools, campuses and backgrounds through shared interests, communities and experiences.
+
+Just as the name suggests, the application aims to make the institution feel less fragmented, encouraging interaction and a stronger sense of belonging across its different academic communities.
+
+**Come Together is not just about discovering what's happening. It's about bringing the people who make it happen closer together.**
+
 ## Identidade visual
 
 A identidade visual do Come Together: UNIPVC inspira-se na cidade e na tradição de Viana do Castelo, procurando estabelecer uma ligação entre a aplicação e a identidade cultural da região.
