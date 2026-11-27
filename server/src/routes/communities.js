@@ -140,7 +140,8 @@ router.get(
     const c = await load(req, res);
     if (!c) return;
     const manage = canManageCommunity(me, c);
-    const members = await people(c.members.slice(0, 50), c.admins);
+    const canSee = !c.isPrivate || has(c.members, me._id) || manage;
+    const members = canSee ? await people(c.members.slice(0, 50), c.admins) : [];
     const requests = manage ? await people(c.requests.slice(0, 50), c.admins) : [];
     res.json({ community: { ...toJson(c, me), canManage: manage, members, requests } });
   })
