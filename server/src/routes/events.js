@@ -5,6 +5,7 @@ const { requireAuth } = require('../middleware/auth');
 const { SCHOOLS } = require('../constants');
 const { notifyGoing } = require('../notify');
 const { canManageEvent } = require('../permissions');
+const { emitAll } = require('../realtime');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -204,6 +205,7 @@ router.post(
     const event = await Event.findById(created._id)
       .populate('organizer', 'username displayName avatar')
       .lean();
+    emitAll('event:changed', { type: 'created', id: String(created._id) });
     res.status(201).json({ event: { ...toJson(event, me), photos: [], coverPhoto: null } });
   })
 );
@@ -269,6 +271,7 @@ router.post(
       return res.status(403).json({ error: 'Só o organizador pode cancelar o evento.' });
     }
     await Event.updateOne({ _id: e._id }, { cancelled: true });
+    emitAll('event:changed', { type: 'cancelled', id: String(e._id) });
     res.json({ cancelled: true });
   })
 );
@@ -324,6 +327,7 @@ router.post(
     if (!added) return bad(res, `Cada evento pode ter no máximo ${PHOTOS_LIMIT} fotos.`);
     const last = added.photos[added.photos.length - 1];
     await Event.updateOne({ _id: e._id, coverPhoto: null }, { coverPhoto: last._id, thumb });
+    emitAll('event:changed', { type: 'refresh', id: String(e._id) });
     res.status(201).json(photosJson(await loadPhotos(e._id)));
   })
 );

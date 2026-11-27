@@ -6,6 +6,7 @@ import Dropdown from './Dropdown.jsx';
 import { SCHOOLS } from './schools.js';
 import { isPast, toISO } from './format.js';
 import { field, label, primary } from './ui.js';
+import { emitEventChange } from './eventsBus.js';
 
 const SCHOOL_OPTIONS = SCHOOLS.map((s) => ({ value: s, label: s }));
 
@@ -89,6 +90,7 @@ export default function CreateEvent({ onDone }) {
     }
     try {
       await uploadPhotos(id);
+      emitEventChange({ type: 'created', id });
       onDone(id);
     } catch (err) {
       setError(`O evento foi criado, mas houve um problema com as fotos: ${err.message}`);
@@ -189,7 +191,10 @@ export default function CreateEvent({ onDone }) {
         </p>
       )}
       {createdId ? (
-        <button type="button" onClick={() => onDone(createdId)} className={primary}>
+        <button type="button" onClick={() => {
+          emitEventChange({ type: 'created', id: createdId });
+          onDone(createdId);
+        }} className={primary}>
           Abrir evento
         </button>
       ) : (

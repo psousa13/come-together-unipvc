@@ -20,7 +20,7 @@ function ProfileSkeleton() {
   );
 }
 
-export default function Profile({ username, onOpen, onFind }) {
+export default function Profile({ username, onOpen, onFind, reload = 0, onChange }) {
   const { getToken } = useAuth();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
@@ -31,7 +31,7 @@ export default function Profile({ username, onOpen, onFind }) {
     api(`/users/${encodeURIComponent(username)}`, { token: getToken() })
       .then((data) => setProfile(data.user))
       .catch((err) => setError(err.message));
-  }, [username, getToken]);
+  }, [username, getToken, reload]);
 
   async function toggleFollow() {
     setBusy(true);
@@ -42,6 +42,7 @@ export default function Profile({ username, onOpen, onFind }) {
       });
       setProfile((p) => ({ ...p, isFollowing: data.following, followersCount: data.followersCount }));
       setList(null);
+      onChange?.();
     } catch (err) {
       setError(err.message);
     } finally {

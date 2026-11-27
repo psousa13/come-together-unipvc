@@ -8,6 +8,7 @@ import ReportButton from './ReportButton.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import PhotoManager from './PhotoManager.jsx';
 import { goingText, whenLong } from './format.js';
+import { emitEventChange } from './eventsBus.js';
 
 function Fact({ icon, label, children }) {
   return (
@@ -62,7 +63,7 @@ function BackButton({ onBack }) {
 
 const topPad = 'pt-[calc(env(safe-area-inset-top)+2rem)] lg:pt-10';
 
-export default function EventPage({ id, onBack, onUser }) {
+export default function EventPage({ id, onBack, onUser, reload = 0 }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
   const [res, setRes] = useState({ id: null, event: null, error: '' });
@@ -79,7 +80,7 @@ export default function EventPage({ id, onBack, onUser }) {
     return () => {
       live = false;
     };
-  }, [id, token]);
+  }, [id, token, reload]);
 
   const plain = (child) => (
     <div className={`space-y-4 px-5 lg:px-8 ${topPad}`}>
@@ -108,6 +109,7 @@ export default function EventPage({ id, onBack, onUser }) {
       await api(`/events/${id}/going`, { method: e.isGoing ? 'DELETE' : 'POST', token });
       const d = await api(`/events/${id}`, { token });
       setRes({ id, event: d.event, error: '' });
+      emitEventChange({ type: 'going', id, going: d.event.isGoing });
     } catch (err) {
       setMsg(err.message);
     }
@@ -120,6 +122,7 @@ export default function EventPage({ id, onBack, onUser }) {
     try {
       await api(`/events/${id}/cancel`, { method: 'POST', token });
       setRes((r) => ({ ...r, event: { ...r.event, cancelled: true } }));
+      emitEventChange({ type: 'cancelled', id });
       setConfirming(false);
     } catch (err) {
       setMsg(err.message);
