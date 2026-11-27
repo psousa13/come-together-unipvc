@@ -68,9 +68,10 @@ Desta forma, a aplicação procura combinar uma identidade visual contemporânea
 5. Definições e perfil: o perfil tem avatar, escola, curso e contadores de seguidores, e a engrenagem do separador Perfil abre as Definições, onde cada utilizador liga ou desliga os avisos de «Eu vou» e os lembretes de eventos. O botão voltar regressa sempre ao ecrã anterior.
 6. Lembretes (RF41): cerca de 1 hora antes de um evento, quem marcou «Eu vou» recebe uma notificação na app, em tempo real se estiver ligado, desde que tenha os lembretes ligados nas Definições.
 7. Denúncias e administração (RF37, parcial): qualquer membro pode denunciar um evento ou um perfil com um motivo. A conta de administração vê a fila de denúncias abertas, pode cancelar o evento denunciado e marca cada denúncia como resolvida ou ignorada.
-8. Estados vazio, erro e carregamento nos ecrãs de eventos, notificações e perfil.
+8. Estados vazio, erro e carregamento nos ecrãs de eventos, notificações, perfil e comunidades.
+9. Comunidades (RF27, RF28): criar comunidade (nome único de 3 a 40 caracteres, descrição até 80, pública ou privada), pesquisar, filtrar por «As minhas», entrar numa pública ou pedir para entrar numa privada, cancelar o pedido e sair. Quem cria fica administrador da comunidade e pode editar o nome, a descrição e a privacidade, aceitar ou recusar pedidos, promover e despromover administradores e remover membros. Numa comunidade privada, só os membros veem a lista de membros.
 
-Em desenvolvimento: mapa por campus, comunidades, feed e avaliações, e o nível de administrador de comunidade das permissões. Ver a tabela de requisitos mais abaixo.
+Em desenvolvimento: mapa por campus, feed, avaliações, eventos em nome de uma comunidade e seguir comunidades. Ver a tabela de requisitos mais abaixo.
 
 ## Stack
 
@@ -92,6 +93,7 @@ Restrição do grupo: tudo gratuito. Por isso os avatares ficam guardados no Mon
 /client   Vite React
   /src    App.jsx (shell e navegação), Access.jsx (splash, login, código, setup),
           Events.jsx, EventPage.jsx, CreateEvent.jsx, Notifications.jsx, Notice.jsx,
+          Communities.jsx, CommunityPage.jsx, CreateCommunity.jsx, CommunityBadge.jsx, communities.js,
           Settings.jsx, NotificationSettings.jsx,
           Profile.jsx, ProfileForm.jsx, UserSearch.jsx, Admin.jsx, ReportButton.jsx, AuthProvider.jsx, api.js, socket.js,
           useNotifications.js, schools.js, ...
@@ -100,11 +102,11 @@ Restrição do grupo: tudo gratuito. Por isso os avatares ficam guardados no Mon
   /src/realtime.js       servidor Socket.IO com autenticação por JWT
   /src/notify.js         criação e envio de notificações
   /src/reminders.js      lembretes 1 hora antes do evento (verificação a cada minuto)
-  /src/permissions.js    isAdmin e canManageEvent
+  /src/permissions.js    isAdmin, canManageEvent, isCommunityAdmin e canManageCommunity
   /src/constants.js      escolas e tipos de membro
   /src/serializers.js
-  /src/models            User, LoginCode, Event, Notification, Report
-  /src/routes            auth, users, events, notifications, reports
+  /src/models            User, LoginCode, Event, Notification, Report, Community
+  /src/routes            auth, users, events, notifications, reports, communities
   /src/middleware        auth (requireAuth, requireAdmin)
 ~~~
 
@@ -214,8 +216,16 @@ Base: `/api`. Os erros vêm em PT-PT no formato `{ "error": "..." }`. Todas as r
 | `POST /api/reports` | Denuncia um evento ou um perfil (`targetType`, `targetId`, `reason`, `details`). Uma denúncia aberta por pessoa e alvo |
 | `GET /api/reports` | Fila de denúncias abertas (só administração) |
 | `PATCH /api/reports/:id` | Marca como `resolved` ou `dismissed` (só administração) |
+| `GET /api/communities` | Lista por ordem alfabética (máximo 100), com filtros `q` (2 caracteres no mínimo) e `mine=1` |
+| `POST /api/communities` | Cria comunidade (`name`, `description`, `isPrivate`); quem cria fica administrador e membro |
+| `GET /api/communities/:id` | Detalhe, com até 50 membros (numa privada, só para membros) e os pedidos pendentes (só para quem gere) |
+| `PATCH /api/communities/:id` | Edita nome, descrição e privacidade; ao passar de privada a pública, os pedidos pendentes são aceites |
+| `POST` e `DELETE /api/communities/:id/join` | Entra (pública) ou pede para entrar (privada); sai ou cancela o pedido. O único administrador não pode sair |
+| `POST` e `DELETE /api/communities/:id/requests/:username` | Aceita ou recusa um pedido (administradores da comunidade) |
+| `POST` e `DELETE /api/communities/:id/admins/:username` | Promove ou despromove um membro; tem de ficar pelo menos um administrador |
+| `DELETE /api/communities/:id/members/:username` | Remove um membro que não seja administrador |
 
-Limites de pedidos (por IP, janela de 15 minutos): 5 pedidos de código e 20 tentativas falhadas de verificação ou de login de administração. As rotas de eventos, notificações e denúncias não têm limite próprio.
+Limites de pedidos (por IP, janela de 15 minutos): 5 pedidos de código e 20 tentativas falhadas de verificação ou de login de administração. As rotas de eventos, notificações, denúncias e comunidades não têm limite próprio.
 ## Tempo real
 
 O cliente liga-se ao Socket.IO com o JWT em `auth.token`. O servidor valida o token e coloca a ligação na sala `user:<id>`. Quando alguém marca «Eu vou» pela primeira vez num evento de outra pessoa, o servidor guarda uma notificação e emite o evento `notification` para o organizador. A mesma pessoa a repetir a ação no mesmo evento não gera uma segunda notificação, e o organizador não é notificado das suas próprias marcações. Se o organizador estiver offline, a notificação fica na base de dados e aparece quando abrir a app. O organizador pode desligar estes avisos nas Definições (`notificationPrefs.going`): com o interruptor desligado, a notificação não é criada nem enviada.
@@ -226,7 +236,7 @@ O servidor verifica no arranque e a cada minuto os eventos que começam na próx
 
 ## Permissões e denúncias
 
-Hoje há dois níveis: membro e administração. `server/src/permissions.js` centraliza as regras (`canManageEvent`: o organizador ou a administração). Qualquer membro com username pode denunciar um evento ou um perfil, e a administração trata a fila no seu ecrã. O nível de administrador de comunidade depende do modelo `Community`, que ainda não existe.
+Há três níveis: membro, administrador de comunidade e administração. `server/src/permissions.js` centraliza as regras: `canManageEvent` (o organizador ou a administração) e `canManageCommunity` (um administrador da comunidade ou a administração). Uma comunidade pode ter vários administradores e tem sempre pelo menos um. A conta de administração não participa em comunidades. Qualquer membro com username pode denunciar um evento ou um perfil, e a administração trata a fila no seu ecrã.
 
 ## Deploy
 
@@ -267,11 +277,11 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 | RF19 | Feed de seguidos e comunidades | Por fazer |
 | RF20 | Avaliar evento de 1 a 5 estrelas | Por fazer |
 | RF24 | Mapa centrado na escola | Por fazer |
-| RF27 | Criar comunidade | Por fazer |
-| RF28 | Comunidades públicas e privadas | Por fazer |
+| RF27 | Criar comunidade | Feito (testado em local) |
+| RF28 | Comunidades públicas e privadas | Feito (testado em local) |
 | RF32 | Notificação em tempo real do «Eu vou» | Feito (testado em local) |
 | RF36 | Configurar notificações | Feito (testado em local) |
-| RF37 | Três níveis de permissões | Parcial (membro e administração, com fila de denúncias; falta o administrador de comunidade) |
+| RF37 | Três níveis de permissões | Feito (membro, administrador de comunidade e administração, com fila de denúncias; testado em local) |
 | RF41 | Lembretes antes do evento | Feito (1 hora antes, só dentro da app, testado em local) |
 
 ## Limitações conhecidas
@@ -283,13 +293,15 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 5. Os lembretes (RF41) são enviados uma só vez, a quem já marcou «Eu vou» nessa altura. Quem marca depois, ou um evento criado com menos de 1 hora de antecedência, não gera lembrete. Se o servidor estiver a dormir na hora certa, o lembrete só sai quando acordar e só se o evento ainda não tiver começado.
 6. «Resolver» numa denúncia só a fecha: não há suspensão de contas nem aviso a quem denunciou.
 7. A administração só vê a fila de denúncias quando abre o ecrã, sem avisos em tempo real.
-8. As rotas de eventos e de denúncias não têm limite de pedidos próprio.
+8. As rotas de eventos, de denúncias e de comunidades não têm limite de pedidos próprio.
+9. A página de uma comunidade mostra no máximo 50 membros e a lista mostra no máximo 100 comunidades, sem paginação.
+10. Os pedidos para entrar numa comunidade privada não geram notificação: os administradores só os veem quando abrem a página da comunidade.
 
 ## Uso de IA
 
 O uso de IA neste projeto está registado de forma transparente.
 
-1. **Claude (Anthropic):** Utilizado como ferramenta de apoio ao desenvolvimento, auxiliando na escrita, revisão e organização do código, incluindo os eventos, as notificações em tempo real, os lembretes, as denúncias, o redesenho dos perfis e este documento.
+1. **Claude (Anthropic):** Utilizado como ferramenta de apoio ao desenvolvimento, auxiliando na escrita, revisão e organização do código, incluindo os eventos, as notificações em tempo real, os lembretes, as denúncias, o redesenho dos perfis, as comunidades (modelo, API e ecrãs) e este documento.
 
 2. **Figma Make:** Utilizado para criar o protótipo visual da aplicação, desenvolvido separadamente do repositório do projeto.
 

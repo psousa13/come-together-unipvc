@@ -10,6 +10,9 @@ import NotificationSettings from './NotificationSettings.jsx';
 import Events from './Events.jsx';
 import EventPage from './EventPage.jsx';
 import CreateEvent from './CreateEvent.jsx';
+import Communities from './Communities.jsx';
+import CommunityPage from './CommunityPage.jsx';
+import CreateCommunity from './CreateCommunity.jsx';
 import Notifications from './Notifications.jsx';
 import Admin from './Admin.jsx';
 import PullToRefresh from './PullToRefresh.jsx';
@@ -31,7 +34,6 @@ const HEAD = {
 };
 const SOON = {
   Início: { icon: 'home', text: 'O feed de publicações e avaliações chega em breve.' },
-  Comunidades: { icon: 'users', text: 'As comunidades chegam em breve.' },
 };
 const PROFILE_PAGES = ['edit', 'find', 'settings', 'notifsettings'];
 const order = NAV.map(([label]) => label);
@@ -61,11 +63,11 @@ function Header({ tab, user, unread, onBell, onSettings, onCreate }) {
         <p className="mt-1.5 truncate text-sm text-navy-soft">{head.sub}</p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {tab === 'Eventos' && (
+        {(tab === 'Eventos' || tab === 'Comunidades') && (
           <button
             type="button"
             onClick={onCreate}
-            aria-label="Criar evento"
+            aria-label={tab === 'Eventos' ? 'Criar evento' : 'Criar comunidade'}
             className="hit flex h-10 items-center gap-1.5 rounded-full bg-coral-deep px-4 text-sm font-bold text-white shadow-sm"
           >
             <Icon name="plus" size={16} /> Criar
@@ -188,10 +190,12 @@ export default function App() {
     run({ kind: 'pop', key: `p${leaving.k}` }, () => {
       setStack((s) => s.filter((x) => x.k !== leaving.k));
       if (leaving.t === 'edit') bump('Perfil');
+      if (leaving.t === 'community') bump('Comunidades');
     });
   };
   const openUser = (username) => showPage({ t: 'user', username });
   const openEvent = (id) => showPage({ t: 'event', id });
+  const openCommunity = (id) => showPage({ t: 'community', id });
   const openBell = () => {
     setFresh(notif.list.filter((x) => !x.read).map((x) => x.id));
     notif.markAllRead();
@@ -206,7 +210,7 @@ export default function App() {
         unread={notif.unread}
         onBell={openBell}
         onSettings={() => showPage({ t: 'settings' })}
-        onCreate={() => showPage({ t: 'create' })}
+        onCreate={() => showPage({ t: k === 'Comunidades' ? 'newcommunity' : 'create' })}
       />
       {k === 'Perfil' ? (
         <div className="px-5 lg:px-8">
@@ -219,6 +223,8 @@ export default function App() {
         </div>
       ) : k === 'Eventos' ? (
         <Events onOpen={openEvent} reload={ticks.Eventos ?? 0} />
+      ) : k === 'Comunidades' ? (
+        <Communities onOpen={openCommunity} reload={ticks.Comunidades ?? 0} />
       ) : (
         <Soon {...SOON[k]} />
       )}
@@ -309,6 +315,24 @@ export default function App() {
         </>
       );
     }
+    if (p.t === 'community') {
+      return <CommunityPage id={p.id} reload={rl} onBack={back} onUser={openUser} />;
+    }
+    if (p.t === 'newcommunity') {
+      return (
+        <>
+          <BackBar onBack={back} title="Criar comunidade" />
+          <div className="px-5 lg:px-8">
+            <CreateCommunity
+              onDone={(id) => {
+                bump('Comunidades');
+                replacePage({ t: 'community', id });
+              }}
+            />
+          </div>
+        </>
+      );
+    }
     return null;
   };
 
@@ -350,8 +374,11 @@ export default function App() {
 
   const eventPage = page?.t === 'event' || page?.t === 'create';
   const profilePage = PROFILE_PAGES.includes(page?.t);
-  const formPage = page?.t === 'create' || page?.t === 'edit';
-  const canRefresh = page ? page.t === 'event' || page.t === 'user' : tab === 'Eventos' || tab === 'Perfil';
+  const communityPage = page?.t === 'community' || page?.t === 'newcommunity';
+  const formPage = page?.t === 'create' || page?.t === 'edit' || page?.t === 'newcommunity';
+  const canRefresh = page
+    ? page.t === 'event' || page.t === 'user' || page.t === 'community'
+    : tab === 'Eventos' || tab === 'Perfil' || tab === 'Comunidades';
 
   return (
     <div className="app-shell relative mx-auto flex h-dvh max-w-[480px] flex-col lg:max-w-[1280px] lg:flex-row">
@@ -367,7 +394,10 @@ export default function App() {
         {NAV.map(([label, icon]) => {
           const active =
             tab === label &&
-            (!page || (eventPage && label === 'Eventos') || (profilePage && label === 'Perfil'));
+            (!page ||
+              (eventPage && label === 'Eventos') ||
+              (profilePage && label === 'Perfil') ||
+              (communityPage && label === 'Comunidades'));
           return (
             <button
               key={label}
