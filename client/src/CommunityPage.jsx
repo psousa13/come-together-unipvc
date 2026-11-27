@@ -6,6 +6,8 @@ import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
 import CommunityBadge from './CommunityBadge.jsx';
 import { CommunityForm } from './CreateCommunity.jsx';
+import EventRow from './EventRow.jsx';
+import { onEventChange } from './eventsBus.js';
 import { membersText } from './communities.js';
 
 const btn =
@@ -75,7 +77,7 @@ function Person({ p, me, onUser, children }) {
   );
 }
 
-export default function CommunityPage({ id, onBack, onUser, reload = 0 }) {
+export default function CommunityPage({ id, onBack, onUser, onEvent, onCreateEvent, reload = 0 }) {
   const { user, getToken } = useAuth();
   const [token] = useState(getToken);
   const [res, setRes] = useState({ id: null, community: null, error: '' });
@@ -85,6 +87,8 @@ export default function CommunityPage({ id, onBack, onUser, reload = 0 }) {
   const [leaving, setLeaving] = useState(false);
   const [removing, setRemoving] = useState('');
   const [editing, setEditing] = useState(false);
+  const [events, setEvents] = useState({ id: null, list: [] });
+  const [evTick, setEvTick] = useState(0);
 
   useEffect(() => {
     let live = true;
@@ -95,6 +99,18 @@ export default function CommunityPage({ id, onBack, onUser, reload = 0 }) {
       live = false;
     };
   }, [id, token, reload, tick]);
+
+  useEffect(() => {
+    let live = true;
+    api(`/events?community=${id}`, { token })
+      .then((d) => live && setEvents({ id, list: d.events }))
+      .catch(() => live && setEvents({ id, list: [] }));
+    return () => {
+      live = false;
+    };
+  }, [id, token, reload, tick, evTick]);
+
+  useEffect(() => onEventChange(() => setEvTick((t) => t + 1)), []);
 
   const plain = (child) => (
     <div className={`space-y-4 px-5 lg:px-8 ${topPad}`}>
@@ -175,12 +191,28 @@ export default function CommunityPage({ id, onBack, onUser, reload = 0 }) {
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
                   <span className="rounded-full bg-sand px-2.5 py-1">{c.isPrivate ? 'Privada' : 'Pública'}</span>
                   <span className="rounded-full bg-sand px-2.5 py-1">{membersText(c.membersCount)}</span>
+                  <span className="rounded-full bg-sand px-2.5 py-1">
+                    {c.followersCount === 1 ? '1 seguidor' : `${c.followersCount} seguidores`}
+                  </span>
                   {c.isAdmin && <span className="rounded-full bg-navy px-2.5 py-1 text-paper">És admin</span>}
                 </div>
               </div>
             </div>
             {c.description && <p className="m-0 break-words text-sm leading-relaxed text-navy-soft">{c.description}</p>}
           </div>
+        )}
+
+        {!c.isMember && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => act('/follow', c.isFollowing ? 'DELETE' : 'POST')}
+            aria-pressed={c.isFollowing}
+            className={`${btn} ${c.isFollowing ? 'bg-navy text-paper' : 'border-2 border-navy text-navy'}`}
+          >
+            {c.isFollowing && <Icon name="check" size={16} />}
+            {c.isFollowing ? 'A seguir' : 'Seguir'}
+          </button>
         )}
 
         {!c.isMember && !c.hasRequested && (
@@ -235,6 +267,36 @@ export default function CommunityPage({ id, onBack, onUser, reload = 0 }) {
             </ul>
           </section>
         )}
+
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="m-0 font-display text-xl font-bold">Próximos eventos</h2>
+            {c.isAdmin && (
+              <button
+                type="button"
+                onClick={() => onCreateEvent(c.id)}
+                className="hit flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-coral-deep px-3.5 text-xs font-bold text-white shadow-sm"
+              >
+                <Icon name="plus" size={14} /> Criar evento
+              </button>
+            )}
+          </div>
+          {events.id !== id ? (
+            <div className="skeleton h-28 w-full rounded-3xl" />
+          ) : events.list.length === 0 ? (
+            <p className="m-0 rounded-2xl bg-sand/70 p-4 text-center text-sm text-navy-soft">
+              {c.isPrivate && !canSee ? 'Entra na comunidade para veres os eventos.' : 'Sem eventos marcados.'}
+            </p>
+          ) : (
+            <ul className="m-0 list-none space-y-2 p-0">
+              {events.list.map((e) => (
+                <li key={e.id} className="rounded-3xl bg-sand/70">
+                  <EventRow e={e} onOpen={onEvent} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <section className="space-y-2">
           <h2 className="m-0 font-display text-xl font-bold">Membros</h2>

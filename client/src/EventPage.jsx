@@ -4,6 +4,7 @@ import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Notice from './Notice.jsx';
+import CommunityBadge from './CommunityBadge.jsx';
 import ReportButton from './ReportButton.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import PhotoManager from './PhotoManager.jsx';
@@ -63,7 +64,7 @@ function BackButton({ onBack }) {
 
 const topPad = 'pt-[calc(env(safe-area-inset-top)+2rem)] lg:pt-10';
 
-export default function EventPage({ id, onBack, onUser, reload = 0 }) {
+export default function EventPage({ id, onBack, onUser, onCommunity, reload = 0 }) {
   const { getToken } = useAuth();
   const [token] = useState(getToken);
   const [res, setRes] = useState({ id: null, event: null, error: '' });
@@ -139,6 +140,18 @@ export default function EventPage({ id, onBack, onUser, reload = 0 }) {
           <span className="mb-3 inline-flex items-center rounded-lg border border-navy/20 bg-paper px-2.5 py-1.5 text-xs font-semibold">
             Organizado pela UniPVC
           </span>
+        ) : e.community ? (
+          <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-full bg-paper px-3 py-1.5 shadow-sm">
+            <span className="shrink-0 text-xs text-navy-soft">Organizado por</span>
+            <button
+              type="button"
+              onClick={() => onCommunity(e.community.id)}
+              className="hit flex min-w-0 items-center gap-2 text-xs font-semibold"
+            >
+              <CommunityBadge name={e.community.name} size={22} />
+              <span className="truncate">{e.community.name}</span>
+            </button>
+          </div>
         ) : (
           e.organizer?.displayName && (
             <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-full bg-paper px-3 py-1.5 shadow-sm">
@@ -158,6 +171,7 @@ export default function EventPage({ id, onBack, onUser, reload = 0 }) {
         <h1 className="m-0 break-words font-display text-[32px] font-bold leading-[1.05]">{e.title}</h1>
         <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
           <span className="rounded-full bg-paper px-2.5 py-1">{e.school}</span>
+          {e.isPrivate && <span className="rounded-full bg-navy px-2.5 py-1 text-paper">Só membros</span>}
           {e.cancelled && <span className="rounded-full bg-ruby px-2.5 py-1 text-white">Cancelado</span>}
           {!e.cancelled && e.ended && <span className="rounded-full bg-sand-deep px-2.5 py-1">Terminou</span>}
         </div>

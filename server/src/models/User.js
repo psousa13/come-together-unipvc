@@ -13,6 +13,7 @@ const userSchema = new Schema(
     bio: { type: String, trim: true, maxlength: 160, default: '' },
     role: { type: String, enum: ['member', 'admin'], default: 'member' },
     following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    followedCommunities: [{ type: Schema.Types.ObjectId, ref: 'Community' }],
     notificationPrefs: {
       going: { type: Boolean, default: true },
       reminders: { type: Boolean, default: true },
@@ -22,5 +23,6 @@ const userSchema = new Schema(
 );
 
 userSchema.index({ following: 1 });
+userSchema.index({ followedCommunities: 1 });
 
 module.exports = model('User', userSchema);

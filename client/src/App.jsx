@@ -303,20 +303,29 @@ export default function App() {
       );
     }
     if (p.t === 'event') {
-      return <EventPage id={p.id} reload={rl} onBack={back} onUser={openUser} />;
+      return <EventPage id={p.id} reload={rl} onBack={back} onUser={openUser} onCommunity={openCommunity} />;
     }
     if (p.t === 'create') {
       return (
         <>
           <BackBar onBack={back} title="Criar evento" />
           <div className="px-5 lg:px-8">
-            <CreateEvent onDone={(id) => replacePage({ t: 'event', id })} />
+            <CreateEvent community={p.community} onDone={(id) => replacePage({ t: 'event', id })} />
           </div>
         </>
       );
     }
     if (p.t === 'community') {
-      return <CommunityPage id={p.id} reload={rl} onBack={back} onUser={openUser} />;
+      return (
+        <CommunityPage
+          id={p.id}
+          reload={rl}
+          onBack={back}
+          onUser={openUser}
+          onEvent={openEvent}
+          onCreateEvent={(community) => showPage({ t: 'create', community })}
+        />
+      );
     }
     if (p.t === 'newcommunity') {
       return (
@@ -374,7 +383,7 @@ export default function App() {
 
   const eventPage = page?.t === 'event' || page?.t === 'create';
   const profilePage = PROFILE_PAGES.includes(page?.t);
-  const communityPage = page?.t === 'community' || page?.t === 'newcommunity';
+  const communityPage = tab === 'Comunidades' && !!page;
   const formPage = page?.t === 'create' || page?.t === 'edit' || page?.t === 'newcommunity';
   const canRefresh = page
     ? page.t === 'event' || page.t === 'user' || page.t === 'community'

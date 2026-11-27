@@ -70,8 +70,9 @@ Desta forma, a aplicação procura combinar uma identidade visual contemporânea
 7. Denúncias e administração (RF37, parcial): qualquer membro pode denunciar um evento ou um perfil com um motivo. A conta de administração vê a fila de denúncias abertas, pode cancelar o evento denunciado e marca cada denúncia como resolvida ou ignorada.
 8. Estados vazio, erro e carregamento nos ecrãs de eventos, notificações, perfil e comunidades.
 9. Comunidades (RF27, RF28): criar comunidade (nome único de 3 a 40 caracteres, descrição até 80, pública ou privada), pesquisar, filtrar por «As minhas», entrar numa pública ou pedir para entrar numa privada, cancelar o pedido e sair. Quem cria fica administrador da comunidade e pode editar o nome, a descrição e a privacidade, aceitar ou recusar pedidos, promover e despromover administradores e remover membros. Numa comunidade privada, só os membros veem a lista de membros.
+10. Eventos de comunidade (RF11) e seguir comunidades (RF07): os administradores de uma comunidade podem criar eventos em nome dela, abertos a todos ou só para membros. A página da comunidade mostra os próximos eventos e tem o botão Seguir para quem não é membro, com o número de seguidores. Nas listas e na página do evento aparece o nome da comunidade.
 
-Em desenvolvimento: mapa por campus, feed, avaliações, eventos em nome de uma comunidade e seguir comunidades. Ver a tabela de requisitos mais abaixo.
+Em desenvolvimento: mapa por campus, feed e avaliações. Ver a tabela de requisitos mais abaixo.
 
 ## Stack
 
@@ -206,8 +207,8 @@ Base: `/api`. Os erros vêm em PT-PT no formato `{ "error": "..." }`. Todas as r
 | `GET /api/users/:username` | Perfil público |
 | `POST` e `DELETE /api/users/:username/follow` | Seguir e deixar de seguir |
 | `GET /api/users/:username/followers` e `/following` | Listas de seguidores e seguidos |
-| `GET /api/events` | Lista com filtros: `school`, `origin`, `from`, `to`, `q`, `going`, `mine`, `past`, `limit`, `page` |
-| `POST /api/events` | Cria evento |
+| `GET /api/events` | Lista com filtros: `school`, `origin`, `from`, `to`, `q`, `going`, `mine`, `past`, `community`, `limit`, `page` |
+| `POST /api/events` | Cria evento; com `community` (só administradores dessa comunidade) e `isPrivate` (só membros, apenas em eventos de comunidade) |
 | `GET /api/events/:id` | Detalhe do evento |
 | `POST` e `DELETE /api/events/:id/going` | Marca e desmarca «Eu vou» |
 | `POST /api/events/:id/cancel` | Cancela (organizador ou administração) |
@@ -224,6 +225,7 @@ Base: `/api`. Os erros vêm em PT-PT no formato `{ "error": "..." }`. Todas as r
 | `POST` e `DELETE /api/communities/:id/requests/:username` | Aceita ou recusa um pedido (administradores da comunidade) |
 | `POST` e `DELETE /api/communities/:id/admins/:username` | Promove ou despromove um membro; tem de ficar pelo menos um administrador |
 | `DELETE /api/communities/:id/members/:username` | Remove um membro que não seja administrador |
+| `POST` e `DELETE /api/communities/:id/follow` | Seguir e deixar de seguir; devolve `following` e `followersCount` |
 
 Limites de pedidos (por IP, janela de 15 minutos): 5 pedidos de código e 20 tentativas falhadas de verificação ou de login de administração. As rotas de eventos, notificações, denúncias e comunidades não têm limite próprio.
 ## Tempo real
@@ -236,7 +238,7 @@ O servidor verifica no arranque e a cada minuto os eventos que começam na próx
 
 ## Permissões e denúncias
 
-Há três níveis: membro, administrador de comunidade e administração. `server/src/permissions.js` centraliza as regras: `canManageEvent` (o organizador ou a administração) e `canManageCommunity` (um administrador da comunidade ou a administração). Uma comunidade pode ter vários administradores e tem sempre pelo menos um. A conta de administração não participa em comunidades. Qualquer membro com username pode denunciar um evento ou um perfil, e a administração trata a fila no seu ecrã.
+Há três níveis: membro, administrador de comunidade e administração. `server/src/permissions.js` centraliza as regras: `canManageEvent` (o organizador ou a administração) e `canManageCommunity` (um administrador da comunidade ou a administração). Uma comunidade pode ter vários administradores e tem sempre pelo menos um. A conta de administração não participa em comunidades, mas vê todos os eventos, incluindo os privados, para poder tratar denúncias. Só os administradores de uma comunidade criam eventos em nome dela, e um evento privado só é visível aos membros da comunidade, ao organizador e a quem já marcou «Eu vou». Qualquer membro com username pode denunciar um evento ou um perfil, e a administração trata a fila no seu ecrã.
 
 ## Deploy
 
@@ -268,9 +270,9 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 | RF01 | Registo com email institucional e código | Feito |
 | RF02 | Iniciar e terminar sessão | Feito |
 | RF05 | Perfil: nome, username, foto e escola | Feito |
-| RF07 | Seguir pessoas e comunidades | Parcial (só pessoas) |
+| RF07 | Seguir pessoas e comunidades | Feito (testado em local) |
 | RF10 | Criar evento sem aprovação | Feito (testado em local) |
-| RF11 | Evento em nome próprio ou de comunidade | Parcial (só em nome próprio) |
+| RF11 | Evento em nome próprio ou de comunidade | Feito (testado em local) |
 | RF12 | Marcar e desmarcar «Eu vou» | Feito (testado em local) |
 | RF13 | Lista de eventos com filtros | Feito (testado em local) |
 | RF14 | Página do evento | Feito (testado em local) |
@@ -296,12 +298,14 @@ Depois abre-se o PR no GitHub e faz-se o merge. Antes do PR, `npm run build` na 
 8. As rotas de eventos, de denúncias e de comunidades não têm limite de pedidos próprio.
 9. A página de uma comunidade mostra no máximo 50 membros e a lista mostra no máximo 100 comunidades, sem paginação.
 10. Os pedidos para entrar numa comunidade privada não geram notificação: os administradores só os veem quando abrem a página da comunidade.
+11. Um evento de comunidade só pode ser cancelado e gerido (fotos) por quem o criou ou pela administração, e não pelos outros administradores da comunidade.
+12. Quem sai de uma comunidade deixa de ver os eventos privados dela, exceto aqueles em que já marcou «Eu vou».
 
 ## Uso de IA
 
 O uso de IA neste projeto está registado de forma transparente.
 
-1. **Claude (Anthropic):** Utilizado como ferramenta de apoio ao desenvolvimento, auxiliando na escrita, revisão e organização do código, incluindo os eventos, as notificações em tempo real, os lembretes, as denúncias, o redesenho dos perfis, as comunidades (modelo, API e ecrãs) e este documento.
+1. **Claude (Anthropic):** Utilizado como ferramenta de apoio ao desenvolvimento, auxiliando na escrita, revisão e organização do código, incluindo os eventos, as notificações em tempo real, os lembretes, as denúncias, o redesenho dos perfis, as comunidades (modelo, API e ecrãs), os eventos de comunidade, seguir comunidades e este documento.
 
 2. **Figma Make:** Utilizado para criar o protótipo visual da aplicação, desenvolvido separadamente do repositório do projeto.
 

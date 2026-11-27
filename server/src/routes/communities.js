@@ -41,6 +41,7 @@ function toJson(c, me) {
     isMember: has(c.members, me._id),
     isAdmin: has(c.admins, me._id),
     hasRequested: has(c.requests, me._id),
+    isFollowing: has(me.followedCommunities || [], c._id),
     createdAt: c.createdAt,
   };
 }
@@ -143,7 +144,8 @@ router.get(
     const canSee = !c.isPrivate || has(c.members, me._id) || manage;
     const members = canSee ? await people(c.members.slice(0, 50), c.admins) : [];
     const requests = manage ? await people(c.requests.slice(0, 50), c.admins) : [];
-    res.json({ community: { ...toJson(c, me), canManage: manage, members, requests } });
+    const followersCount = await User.countDocuments({ followedCommunities: c._id });
+    res.json({ community: { ...toJson(c, me), canManage: manage, members, requests, followersCount } });
   })
 );
 router.patch(
@@ -218,6 +220,20 @@ router.delete(
     await reply(res, c._id, me);
   })
 );
+
+async function setFollow(req, res, add) {
+  const me = req.user;
+  if (!needMember(me, res)) return;
+  const c = await load(req, res);
+  if (!c) return;
+  const update = add ? { $addToSet: { followedCommunities: c._id } } : { $pull: { followedCommunities: c._id } };
+  await User.updateOne({ _id: me._id }, update);
+  const followersCount = await User.countDocuments({ followedCommunities: c._id });
+  res.json({ following: add, followersCount });
+}
+
+router.post('/:id/follow', wrap((req, res) => setFollow(req, res, true)));
+router.delete('/:id/follow', wrap((req, res) => setFollow(req, res, false)));
 
 async function manageTarget(req, res) {
   const c = await load(req, res);
