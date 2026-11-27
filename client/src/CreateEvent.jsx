@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PhotoPicker from './PhotoPicker.jsx';
 import { api } from './api.js';
 import { useAuth } from './useAuth.js';
@@ -9,6 +9,11 @@ import { field, label, primary } from './ui.js';
 import { emitEventChange } from './eventsBus.js';
 
 const SCHOOL_OPTIONS = SCHOOLS.map((s) => ({ value: s, label: s }));
+
+const AUDIENCE = [
+  [false, 'Todos', 'Qualquer membro da UniPVC vê o evento.'],
+  [true, 'Só membros', 'Só os membros da comunidade veem o evento.'],
+];
 
 function problem(f) {
   if (f.title.trim().length < 3) return 'O nome precisa de pelo menos 3 caracteres.';
@@ -22,7 +27,7 @@ function problem(f) {
   return '';
 }
 
-export default function CreateEvent({ onDone }) {
+export default function CreateEvent({ onDone, community = '' }) {
   const { user, getToken } = useAuth();
   const [token] = useState(getToken);
   const [f, setF] = useState({
@@ -35,6 +40,9 @@ export default function CreateEvent({ onDone }) {
     end: '22:00',
     ticketUrl: '',
   });
+  const [owner, setOwner] = useState(community);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [mine, setMine] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [coverKey, setCoverKey] = useState(null);
   const [preparing, setPreparing] = useState(false);
@@ -42,7 +50,21 @@ export default function CreateEvent({ onDone }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    let live = true;
+    api('/communities?mine=1', { token })
+      .then((d) => live && setMine(d.communities.filter((c) => c.isAdmin)))
+      .catch(() => live && setMine([]));
+    return () => {
+      live = false;
+    };
+  }, [token]);
+
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const ownerOptions = [
+    { value: '', label: `Eu (${user.displayName})` },
+    ...mine.map((c) => ({ value: c.id, label: c.name })),
+  ];
 
   const cover = photos.some((p) => p.key === coverKey) ? coverKey : photos[0]?.key;
 
@@ -79,6 +101,10 @@ export default function CreateEvent({ onDone }) {
     };
     if (f.description.trim()) body.description = f.description.trim();
     if (f.ticketUrl.trim()) body.ticketUrl = f.ticketUrl.trim();
+    if (owner) {
+      body.community = owner;
+      body.isPrivate = isPrivate;
+    }
     let id;
     try {
       const d = await api('/events', { method: 'POST', body, token });
@@ -101,6 +127,50 @@ export default function CreateEvent({ onDone }) {
   return (
     <form onSubmit={submit} className="space-y-5 pb-4">
       <p className="m-0 text-sm text-navy-soft">Fica publicado de imediato, sem aprovação.</p>
+      {community ? (
+        <div className="space-y-1.5">
+          <p className={`${label} m-0`}>Publicar como</p>
+          <p className={`${field} m-0 flex items-center font-semibold`}>
+            {mine.find((c) => c.id === community)?.name || 'Comunidade'}
+          </p>
+        </div>
+      ) : mine.length > 0 && (
+        <div className="space-y-1.5">
+          <label htmlFor="ce-owner" className={label}>Publicar como</label>
+          <Dropdown
+            id="ce-owner"
+            label="Publicar como"
+            value={owner}
+            onChange={(v) => {
+              setOwner(v);
+              if (!v) setIsPrivate(false);
+            }}
+            options={ownerOptions}
+            placeholder={`Eu (${user.displayName})`}
+          />
+        </div>
+      )}
+      {owner && (
+        <div className="space-y-1.5">
+          <p className={`${label} m-0`}>Quem vê o evento</p>
+          <div className="grid grid-cols-2 gap-2">
+            {AUDIENCE.map(([value, title, text]) => (
+              <button
+                key={title}
+                type="button"
+                aria-pressed={isPrivate === value}
+                onClick={() => setIsPrivate(value)}
+                className={`rounded-2xl border p-3 text-left ${
+                  isPrivate === value ? 'border-coral-deep bg-white ring-2 ring-coral-deep' : 'border-line bg-sand/60'
+                }`}
+              >
+                <span className="block text-sm font-bold">{title}</span>
+                <span className="mt-1 block text-xs text-navy-soft">{text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="space-y-1.5">
         <p className={`${label} mb-1.5`}>Fotos (opcional)</p>
         <PhotoPicker

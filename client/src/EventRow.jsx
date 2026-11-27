@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { useAuth } from './useAuth.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import CommunityBadge from './CommunityBadge.jsx';
 import { whenShort } from './format.js';
 
 export default function EventRow({ e, onOpen }) {
@@ -11,7 +12,7 @@ export default function EventRow({ e, onOpen }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const on = change?.from === e ? change.going : e.isGoing;
-  const host = e.origin === 'official' ? 'UniPVC' : e.organizer?.displayName || 'Membro';
+  const host = e.origin === 'official' ? 'UniPVC' : e.community?.name || e.organizer?.displayName || 'Membro';
 
   async function toggle(ev) {
     ev.stopPropagation();
@@ -45,8 +46,17 @@ export default function EventRow({ e, onOpen }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col items-start overflow-hidden py-1">
         <span className="flex max-w-full items-center gap-2 text-xs font-semibold">
-          <Avatar user={{ displayName: host }} size={22} />
+          {e.community ? (
+            <CommunityBadge name={e.community.name} size={22} />
+          ) : (
+            <Avatar user={{ displayName: host }} size={22} />
+          )}
           <span className="truncate">{host}</span>
+          {e.isPrivate && (
+            <span className="shrink-0 rounded-full bg-sand px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-coral-deep">
+              Só membros
+            </span>
+          )}
         </span>
         <h3 className="m-0 mt-1.5 break-words font-display text-[17px] font-bold leading-tight">{e.title}</h3>
         <p className="m-0 mt-auto pt-1 text-[11px] font-semibold uppercase tracking-wider text-ruby">

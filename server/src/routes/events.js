@@ -1,10 +1,11 @@
 const express = require('express');
 const Event = require('../models/Event');
 const User = require('../models/User');
+const Community = require('../models/Community');
 const { requireAuth } = require('../middleware/auth');
 const { SCHOOLS } = require('../constants');
 const { notifyGoing } = require('../notify');
-const { canManageEvent } = require('../permissions');
+const { isAdmin, canManageEvent, isCommunityAdmin } = require('../permissions');
 const { emitAll } = require('../realtime');
 
 const router = express.Router();
@@ -42,8 +43,12 @@ function parseDate(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function visibleTo(me) {
-  return { $or: [{ isPrivate: false }, { organizer: me._id }, { attendees: me._id }] };
+async function visibleTo(me) {
+  if (isAdmin(me)) return {};
+  const mine = await Community.find({ members: me._id }).distinct('_id');
+  return {
+    $or: [{ isPrivate: false }, { organizer: me._id }, { attendees: me._id }, { community: { $in: mine } }],
+  };
 }
 
 function toJson(e, me) {
@@ -70,6 +75,7 @@ function toJson(e, me) {
     organizer: org
       ? { username: org.username || null, displayName: org.displayName || '', avatar: org.avatar }
       : null,
+    community: e.community && e.community._id ? { id: String(e.community._id), name: e.community.name } : null,
     isMine: org ? String(org._id) === meId : false,
     attendeesCount: e.attendees.length,
     isGoing: e.attendees.some((a) => String(a) === meId),
@@ -84,7 +90,7 @@ router.get(
     const { school, from, to, q, origin } = req.query;
     const past = req.query.past === '1';
     const now = new Date();
-    const and = [visibleTo(me), { cancelled: false }];
+    const and = [await visibleTo(me), { cancelled: false }];
 
     if (school !== undefined) {
       if (!SCHOOLS.includes(school)) return bad(res, 'Escola inválida.');
@@ -114,6 +120,10 @@ router.get(
     }
     if (req.query.going === '1') and.push({ attendees: me._id });
     if (req.query.mine === '1') and.push({ organizer: me._id });
+    if (req.query.community !== undefined) {
+      if (!ID_RE.test(req.query.community)) return bad(res, 'Comunidade inválida.');
+      and.push({ community: req.query.community });
+    }
 
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -123,6 +133,7 @@ router.get(
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('organizer', 'username displayName')
+      .populate('community', 'name')
       .lean();
 
     res.json({ events: events.map((e) => toJson(e, me)) });
@@ -160,9 +171,18 @@ router.post(
     if (b.origin === 'official' && !isAdmin) {
       return res.status(403).json({ error: 'Só a UniPVC pode criar eventos oficiais.' });
     }
-    if (b.isPrivate || b.community) {
-      return bad(res, 'Eventos privados e de comunidades ainda não estão disponíveis.');
+    let community = null;
+    if (b.community !== undefined && b.community !== null && b.community !== '') {
+      if (typeof b.community !== 'string' || !ID_RE.test(b.community)) return bad(res, 'Comunidade inválida.');
+      community = await Community.findById(b.community).select('admins').lean();
+      if (!community) return res.status(404).json({ error: 'Comunidade não encontrada.' });
+      if (!isCommunityAdmin(me, community)) {
+        return res.status(403).json({ error: 'Só os administradores da comunidade podem criar eventos em nome dela.' });
+      }
     }
+    if (b.isPrivate !== undefined && typeof b.isPrivate !== 'boolean') return bad(res, 'Privacidade inválida.');
+    const isPrivate = b.isPrivate === true;
+    if (isPrivate && !community) return bad(res, 'Só os eventos de uma comunidade podem ser privados.');
 
     const loc = b.location || {};
     const name = typeof loc.name === 'string' ? loc.name.trim() : '';
@@ -197,6 +217,8 @@ router.post(
       startsAt,
       endsAt,
       organizer: me._id,
+      community: community ? community._id : null,
+      isPrivate,
       school,
       origin: b.origin === 'official' ? 'official' : 'member',
       location,
@@ -204,6 +226,7 @@ router.post(
     });
     const event = await Event.findById(created._id)
       .populate('organizer', 'username displayName avatar')
+      .populate('community', 'name')
       .lean();
     emitAll('event:changed', { type: 'created', id: String(created._id) });
     res.status(201).json({ event: { ...toJson(event, me), photos: [], coverPhoto: null } });
@@ -215,9 +238,10 @@ router.get(
   wrap(async (req, res) => {
     const me = req.user;
     if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'Evento não encontrado.' });
-    const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+    const e = await Event.findOne({ $and: [{ _id: req.params.id }, await visibleTo(me)] })
       .select('+photos')
       .populate('organizer', 'username displayName avatar')
+      .populate('community', 'name')
       .lean();
     if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
 
@@ -238,7 +262,7 @@ async function setGoing(req, res, add) {
     return res.status(403).json({ error: 'Conclui o registo antes de marcar «Eu vou».' });
   }
   if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'Evento não encontrado.' });
-  const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+  const e = await Event.findOne({ $and: [{ _id: req.params.id }, await visibleTo(me)] })
     .select('cancelled endsAt title organizer')
     .lean();
   if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
@@ -262,7 +286,7 @@ router.post(
   wrap(async (req, res) => {
     const me = req.user;
     if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'Evento não encontrado.' });
-    const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+    const e = await Event.findOne({ $and: [{ _id: req.params.id }, await visibleTo(me)] })
       .select('organizer')
       .lean();
     if (!e) return res.status(404).json({ error: 'Evento não encontrado.' });
@@ -282,7 +306,7 @@ async function findManaged(req, res) {
     res.status(404).json({ error: 'Evento não encontrado.' });
     return null;
   }
-  const e = await Event.findOne({ $and: [{ _id: req.params.id }, visibleTo(me)] })
+  const e = await Event.findOne({ $and: [{ _id: req.params.id }, await visibleTo(me)] })
     .select('organizer')
     .lean();
   if (!e) {
